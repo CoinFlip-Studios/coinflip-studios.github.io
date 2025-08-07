@@ -60,16 +60,30 @@
      <!-- <a-entity gltf-model="#basketball_hoop" scale="0.001 0.001 0.001" position="0 0 0" rotation="270 180 180" obb-collider static-body>
       </a-entity>-->
 
+      <!--
+        #TODO
+        lower torus
+        physics
+          ball arc
+          collisions
+        counter
+        test with hoop marker image
+      -->
       <a-entity id="hoop"
           geometry="primitive: torus; arc: 360; radius: 1; radiusTubular: 0.02"
           material="color: green"
-          position="0 0 0">
+          position="0 0 0"
+          static-body>
 
       </a-entity>
     </a-marker>
 
-    <a-entity id="ball" geometry="primitive: sphere; radius: 0.1" material="color: orange" position="0 -0.3 -1.5"
-      dynamic-body flickable obb-collider>
+    <a-entity id="ball" 
+          geometry="primitive: sphere; radius: 0.1" 
+          material="color: orange" 
+          position="0 -0.3 -1.5"
+          dynamic-body 
+          flickable obb-collider>
     </a-entity>
 
     <!-- Camera -->
