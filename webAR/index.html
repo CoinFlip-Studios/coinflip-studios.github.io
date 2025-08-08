@@ -61,6 +61,7 @@
 </head>
 
 <body style="margin: 0; overflow: hidden;">
+  <button style="z-index: 999; position: fixed" onclick="placeHoop()">Start</button>
   <a-scene embedded arjs obb-collider="showColliders: true">
     <!-- Assets -->
     <a-assets>
@@ -114,7 +115,7 @@
     <!-- Camera -->
     <a-entity camera></a-entity>
   </a-scene>
-  <button onclick="placeHoop()">Start</button>
+  
 </body>
 
 </html>
