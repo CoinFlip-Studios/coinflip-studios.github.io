@@ -45,7 +45,19 @@
       });
     }
   });
-</script>
+  </script>
+  <script>
+    function placeHoop(){
+      const hoop = document.getElementById("hoop");
+      const ball = document.getElementById("ball");
+      const hoop_placement = document.getElementById("hoop_placement");
+
+      hoop.setAttribute("visible", "true");
+      ball.setAttribute("visible", "true");
+      hoop_placement.setAttribute("visible", "false");
+
+    }
+  </script>
 </head>
 
 <body style="margin: 0; overflow: hidden;">
@@ -57,11 +69,11 @@
 
     <!-- Marker with model -->
     <a-marker preset="hiro">
-      <a-entity
-        geometry="primitive: box; width: 3" 
+      <a-entity id="hoop_placement"
+        geometry="primitive: box; width: 1" 
         material="color: blue"
         postion="0 -1 0"
-        >
+        visible="true">
 
       </a-entity>
      <!-- <a-entity gltf-model="#basketball_hoop" scale="0.001 0.001 0.001" position="0 0 0" rotation="270 180 180" obb-collider static-body>
@@ -77,28 +89,32 @@
         test with hoop marker image
       -->
     
-      <!--<a-entity id="hoop"
-          geometry="primitive: torus; arc: 360; radius: 1; radiusTubular: 0.02"
-          material="color: green"
-          position="0 -1 0"
-          static-body>
 
+    </a-marker>
+
+      <a-entity id="hoop"
+      geometry="primitive: torus; arc: 360; radius: 1; radiusTubular: 0.02"
+      material="color: green"
+      position="0 -1 0"
+      visible="false"
+      static-body>
       </a-entity>
 
-      -->
-    </a-marker>
+
 
     <a-entity id="ball" 
           geometry="primitive: sphere; radius: 0.1" 
           material="color: orange" 
           position="0 -0.3 -1.5"
           dynamic-body 
-          flickable obb-collider>
+          flickable obb-collider
+          visible="false">
     </a-entity>
 
     <!-- Camera -->
     <a-entity camera></a-entity>
   </a-scene>
+  <button onclick="placeHoop()">Start</button>
 </body>
 
 </html>
