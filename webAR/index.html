@@ -49,9 +49,9 @@
   <script>
     AFRAME.registerComponent('updateHoopPos',{
       tick: function(){
-          var targetPos = document.getElementById("hoop_placement").getAttribute("position")
-          
-          const worldPos = new THREE.Vector3();
+          var targetPos = document.querySelector("#hoop_placement")
+
+          var worldPos = new THREE.Vector3();
           targetPos.object3D.getWorldPosition(worldPos);
 
           this.el.object3D.position.copy(worldPos);
@@ -88,6 +88,7 @@
               geometry="primitive: torus; arc: 360; radius: 1; radiusTubular: 0.02"
               material="color: green"
               position="0 0 0"
+              rotation="90 270 0"
               visible="false"
               updateHoopPos>
     </a-entity>
