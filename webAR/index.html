@@ -48,21 +48,28 @@
   </script>
   <script>
     function placeHoop(){
-      const hoop = document.getElementById("hoop");
-      const ball = document.getElementById("ball");
-      const hoop_placement = document.getElementById("hoop_placement");
+      const marker = document.querySelector('#marker');
+      const placement = document.querySelector('#hoop_placement');
+      const hoop = document.querySelector('#hoop');
 
-      // Get world position of hoop_placement
+      // Wait for marker to be visible/tracked
+      if (!marker.object3D.visible) {
+        alert("Marker not visible yet!");
+        return;
+      }
+
+      // Get world position and quaternion (rotation)
       const worldPos = new THREE.Vector3();
-      hoop_placement.object3D.getWorldPosition(worldPos);
+      const worldQuat = new THREE.Quaternion();
+      const worldScale = new THREE.Vector3();
 
-      // Apply world position to hoop
+      placement.object3D.updateMatrixWorld(true);
+      placement.object3D.matrixWorld.decompose(worldPos, worldQuat, worldScale);
+
+      // Set hoop to exact world pose
       hoop.object3D.position.copy(worldPos);
-
-      hoop.setAttribute("visible", "true");
-      ball.setAttribute("visible", "true");
-      hoop_placement.setAttribute("visible", "false");
-
+      hoop.object3D.quaternion.copy(worldQuat);
+      hoop.setAttribute("visible", true);
     }
   </script>
 </head>
@@ -109,8 +116,6 @@
       visible="false"
       static-body>
       </a-entity>
-
-
 
     <a-entity id="ball" 
           geometry="primitive: sphere; radius: 0.1" 
