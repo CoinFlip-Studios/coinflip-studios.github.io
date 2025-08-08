@@ -52,6 +52,9 @@
       const ball = document.getElementById("ball");
       const hoop_placement = document.getElementById("hoop_placement");
 
+      const hoop_pos = hoop_placement.getAttribute("position")
+      hoop.setAttribute("position", hoop_pos)
+
       hoop.setAttribute("visible", "true");
       ball.setAttribute("visible", "true");
       hoop_placement.setAttribute("visible", "false");
@@ -98,7 +101,7 @@
       <a-entity id="hoop"
       geometry="primitive: torus; arc: 360; radius: 1; radiusTubular: 0.02"
       material="color: green"
-      position="0 -1 0"
+      position="0 0 0"
       visible="false"
       static-body>
       </a-entity>
