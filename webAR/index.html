@@ -49,8 +49,12 @@
   <script>
     AFRAME.registerComponent('updateHoopPos',{
       tick: function(){
-          var targetPos = document.getElementById("hoop_placement").getAttribute("position");
-          this.el.setAttribute("position", targetPos);
+          var targetPos = document.getElementById("hoop_placement").getAttribute("position")
+          
+          const worldPos = new THREE.Vector3();
+          targetPos.object3D.getWorldPosition(worldPos);
+
+          this.el.object3D.position.copy(worldPos);
       }
     });
   </script>
