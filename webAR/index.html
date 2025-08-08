@@ -47,29 +47,22 @@
   });
   </script>
   <script>
+    AFRAME.registerComponent('updateHoopPos',{
+      tick: function(){
+          var targetPos = document.getElementById("hoop_placement").getAttribute("position");
+          this.el.setAttribute("position", targetPos);
+      }
+    });
+  </script>
+  <script>
     function placeHoop(){
-      const marker = document.querySelector('#marker');
       const placement = document.querySelector('#hoop_placement');
       const hoop = document.querySelector('#hoop');
+      const ball = document.querySelector('#ball');
 
-      // Wait for marker to be visible/tracked
-      if (!marker.object3D.visible) {
-        alert("Marker not visible yet!");
-        return;
-      }
-
-      // Get world position and quaternion (rotation)
-      const worldPos = new THREE.Vector3();
-      const worldQuat = new THREE.Quaternion();
-      const worldScale = new THREE.Vector3();
-
-      placement.object3D.updateMatrixWorld(true);
-      placement.object3D.matrixWorld.decompose(worldPos, worldQuat, worldScale);
-
-      // Set hoop to exact world pose
-      hoop.object3D.position.copy(worldPos);
-      hoop.object3D.quaternion.copy(worldQuat);
       hoop.setAttribute("visible", true);
+      ball.setAttribute("visible", true);
+      placement.setAttribute("visible", false);
     }
   </script>
 </head>
@@ -91,7 +84,8 @@
               geometry="primitive: torus; arc: 360; radius: 1; radiusTubular: 0.02"
               material="color: green"
               position="0 0 0"
-              visible="false">
+              visible="false"
+              updateHoopPos>
     </a-entity>
 
     <!-- Camera -->
