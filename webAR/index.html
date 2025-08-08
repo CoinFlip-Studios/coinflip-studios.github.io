@@ -61,7 +61,9 @@
 </head>
 
 <body style="margin: 0; overflow: hidden;">
-  <button style="z-index: 999; position: fixed" onclick="placeHoop()">Start</button>
+   <div style="position: fixed; top: 20px; left: 20px; z-index: 9999;">
+    <button onclick="placeHoop()">Start</button>
+  </div>
   <a-scene embedded arjs obb-collider="showColliders: true">
     <!-- Assets -->
     <a-assets>
@@ -73,7 +75,7 @@
       <a-entity id="hoop_placement"
         geometry="primitive: box; width: 1" 
         material="color: blue"
-        postion="0 -1 0"
+        position="0 -1 0"
         visible="true">
 
       </a-entity>
