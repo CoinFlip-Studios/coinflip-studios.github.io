@@ -52,8 +52,12 @@
       const ball = document.getElementById("ball");
       const hoop_placement = document.getElementById("hoop_placement");
 
-      const hoop_pos = hoop_placement.getAttribute("position")
-      hoop.setAttribute("position", hoop_pos)
+      // Get world position of hoop_placement
+      const worldPos = new THREE.Vector3();
+      hoop_placement.object3D.getWorldPosition(worldPos);
+
+      // Apply world position to hoop
+      hoop.object3D.position.copy(worldPos);
 
       hoop.setAttribute("visible", "true");
       ball.setAttribute("visible", "true");
