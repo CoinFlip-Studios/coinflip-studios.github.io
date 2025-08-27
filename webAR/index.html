@@ -45,6 +45,14 @@
               y: forward.y,
               z: forward.z
             });
+              
+            el.setAttribute('animation', {
+              property: 'rotation',
+              to: '360 360 180',
+              loop: true,
+              dur: 2000,
+              easing: 'linear'
+            });
 
             // Ensure dynamic-body is active
             el.setAttribute('dynamic-body', 'mass: 1');
@@ -54,13 +62,13 @@
       },
 
       tick: function () {
-
         const startPos = new THREE.Vector3(0, -0.3, -1.5);
 
         let objPos = new THREE.Vector3();
         objPos = this.el.getAttribute('position');
         console.log(objPos.x);
 
+        //pseudo gravitational decay for ball obj
         if (objPos.z != -1.5) {
           if (objPos.y >= 1 && objPos.y <= 0.9) {
             let travel = new THREE.Vector3();
@@ -84,6 +92,7 @@
           }
         }
 
+        //testing if ball has gone too far, return to original pos, reset animation
         if (objPos.z <= -15) {
           console.log("Air ball!");
           this.el.setAttribute('position', startPos);
@@ -92,12 +101,19 @@
             y: 0,
             z: 0
           });
+          //this.el.setAttribute('animation', 'enabled', false);
+           this.el.setAttribute('animation', {
+              property: 'rotation',
+              to: '0 0 0',
+              loop: false,
+              dur: 0,
+              easing: 'linear'
+            });
         }
 
       }
     });
   </script>
-
   <script>
     AFRAME.registerComponent('hit', {
       init: function () {
@@ -110,29 +126,58 @@
         this.el.addEventListener('hitend', (e) => {
           console.log('hitend')
           console.log(e)
+          setScore();
         })
       }
-    })
+    });
+
+    function setScore() {
+      console.log("Called!");
+      const scoreTarget = document.getElementById("score");
+      var content = scoreTarget.textContent;
+
+      var currentScore = content.charAt(content.length - 1);
+      var newScore = parseInt(currentScore) + 1;
+      scoreTarget.innerHTML = "Score: " + newScore;
+    }
 
   </script>
+
 </head>
 
 <body style="margin: 0; overflow: hidden;">
   <a-scene embedded arjs physics="gravity: 0 -9.8 0; restitution: 0.3">
 
+    <a-assets>
+      <a-asset-item id="hoop" src="/coinflip-studios.github.io/webAR/assets/basketball_hoop/scene.gltf"></a-asset-item>
+    </a-assets>
+    <a-assets>
+      <a-asset-item id="ball_texture"
+        src="/coinflip-studios.github.io/webAR/assets/textures/balldimpled.png"></a-asset-item>
+    </a-assets>
+
     <!-- Marker -->
-    <a-marker preset="hiro" id="marker">
-      <a-box id="hoop_placement" height="1" width="1" depth="0.1" material="color: blue" position="0 0 0.25"
+    <a-marker preset='custom' type='pattern'
+      url='/coinflip-studios.github.io/webAR/assets/markers/pattern-ic-logo.patt'>
+      <!-- Backboard -->
+        <a-box 
+          position="0 -2 -.3" 
+          width="3" 
+          height="0.1" 
+          depth="2"
+          material="color: white; transparent: true; opacity: 0.9"
+          static-body="shape: box">
+        </a-box>
+      <a-entity gltf-model="#hoop" position="0 0 .8" rotation="0 90 270" scale="1.5 1.5 1.5"></a-entity>
+      <a-box id="hoop_placement" height=".75" width=".75" depth="0.01" material="color: blue" position="0 0 0.25"
         visible="true" hit aabb-collider="objects: a-sphere">
       </a-box>
     </a-marker>
 
-
     <a-sphere data-aabb-collider-dynamic sphere-collider='objects: a-sphere' id="ball"
-      geometry="primitive: sphere; radius: 0.1" material="color: orange" position="0 -0.3 -1.5" dynamic-body flickable
-      visible="true">
+      geometry="primitive: sphere; radius: 0.1" material="src: #ball_texture" position="0 -0.3 -1.5" dynamic-body
+      flickable>
     </a-sphere>
-
 
     <!-- Camera -->
     <a-entity camera></a-entity>
@@ -140,10 +185,11 @@
 
   <!-- UI Button -->
   <div style="position: fixed; top: 20px; left: 20px; z-index: 9999;">
-    <button>Start -- BUTTON DOES NOTHING RIGHT NOW</button>
+    <button>Start</button>
+  </div>
+  <div style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+    <p id="score">Score: 0</p>
   </div>
 </body>
 
-
 </html>
-
