@@ -11,6 +11,30 @@
     src="https://unpkg.com/aframe-aabb-collider-component@3.2.2/dist/aframe-aabb-collider-component.min.js"></script>
 
   <script>
+    //not sure if this is necessary at this point anymore....
+    //will leave in for the moment and cleanup at a later time
+    AFRAME.registerComponent('wait-for-assets',{
+      init: function(){
+        const el = this.el;
+        const sceneEl = el.sceneEl;
+
+        if(sceneEl.hadLoaded){
+          this.applyMaterial();
+        }else{
+          sceneEl.addEventListener('loaded', () =>{
+            this.applyMaterial();
+          });
+        }
+      },
+
+      applyMaterial: function(){
+        setTimeout(() => {
+          this.el.setAttribute('material', 'src:#ball_texture');
+        }, 1000);
+      }
+    });
+
+
     AFRAME.registerComponent('flickable', {
       init: function () {
         let el = this.el;
@@ -149,11 +173,11 @@
   <a-scene embedded arjs physics="gravity: 0 -9.8 0; restitution: 0.3">
 
     <a-assets>
-      <a-asset-item id="hoop" src="/coinflip-studios.github.io/webAR/assets/basketball_hoop/scene.gltf"></a-asset-item>
+      <a-asset-item id="hoop" src="./assets/basketball_hoop/scene.gltf"></a-asset-item>
     </a-assets>
     <a-assets>
-      <a-asset-item id="ball_texture"
-        src="/coinflip-studios.github.io/webAR/assets/textures/balldimpled.png"></a-asset-item>
+      <img id="ball_texture"
+        src="./assets/textures/balldimpled.png"></img>
     </a-assets>
 
     <!-- Marker -->
@@ -176,7 +200,7 @@
 
     <a-sphere data-aabb-collider-dynamic sphere-collider='objects: a-sphere' id="ball"
       geometry="primitive: sphere; radius: 0.1" material="src: #ball_texture" position="0 -0.3 -1.5" dynamic-body
-      flickable>
+      flickable wait-for-assets>
     </a-sphere>
 
     <!-- Camera -->
