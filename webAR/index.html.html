@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>AR Basketball</title>
+
+  <!-- A-Frame + AR.js -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@600&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { overflow: hidden; font-family: 'Barlow Condensed', sans-serif; }
+
+    /* ── HUD Overlay ── */
+    #hud {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 9999;
+      pointer-events: none;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .hud-panel {
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 120, 30, 0.3);
+      border-radius: 14px;
+      padding: 12px 20px;
+      color: #fff;
+    }
+
+    .score-panel {
+      text-align: center;
+    }
+
+    .score-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: rgba(255, 165, 80, 0.8);
+      margin-bottom: 2px;
+    }
+
+    .score-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      line-height: 1;
+      color: #FF8830;
+      text-shadow: 0 0 20px rgba(255, 136, 48, 0.5);
+    }
+
+    .streak-panel {
+      text-align: center;
+    }
+
+    .streak-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .streak-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      line-height: 1;
+      color: #FFD700;
+      transition: all 0.2s ease;
+    }
+
+    .streak-value.fire {
+      color: #FF4500;
+      text-shadow: 0 0 15px rgba(255, 69, 0, 0.7);
+    }
+
+    /* ── Bottom Controls ── */
+    #bottom-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 9999;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .power-bar-container {
+      width: 200px;
+      height: 10px;
+      background: rgba(0,0,0,0.5);
+      border-radius: 5px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .power-bar-fill {
+      height: 100%;
+      width: 50%;
+      background: linear-gradient(90deg, #FF8830, #FF4500);
+      border-radius: 5px;
+      transition: width 0.05s ease;
+    }
+
+    .shoot-btn {
+      pointer-events: all;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 136, 48, 0.6);
+      background: radial-gradient(circle at 35% 35%, #FF8830, #CC5500);
+      color: white;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 14px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      box-shadow:
+        0 0 25px rgba(255, 136, 48, 0.4),
+        inset 0 -3px 8px rgba(0,0,0,0.3),
+        inset 0 2px 4px rgba(255,255,255,0.2);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .shoot-btn:active {
+      transform: scale(0.9);
+      box-shadow: 0 0 40px rgba(255, 136, 48, 0.7);
+    }
+
+    .shoot-btn .ball-icon {
+      font-size: 28px;
+      display: block;
+      line-height: 1;
+    }
+
+    /* ── Instruction Overlay ── */
+    #instructions {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background: rgba(0, 0, 0, 0.92);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      padding: 30px;
+      text-align: center;
+      transition: opacity 0.5s ease;
+    }
+
+    #instructions.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #instructions h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 52px;
+      color: #FF8830;
+      letter-spacing: 4px;
+      margin-bottom: 8px;
+      text-shadow: 0 0 30px rgba(255, 136, 48, 0.5);
+    }
+
+    #instructions .subtitle {
+      font-size: 14px;
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 40px;
+    }
+
+    .instruction-step {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      max-width: 320px;
+    }
+
+    .step-num {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255, 136, 48, 0.2);
+      border: 1px solid #FF8830;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      color: #FF8830;
+      flex-shrink: 0;
+    }
+
+    .step-text {
+      font-size: 15px;
+      line-height: 1.4;
+      color: rgba(255,255,255,0.8);
+      text-align: left;
+    }
+
+    .start-btn {
+      margin-top: 30px;
+      padding: 14px 48px;
+      border: 2px solid #FF8830;
+      background: transparent;
+      color: #FF8830;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 4px;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .start-btn:hover, .start-btn:active {
+      background: #FF8830;
+      color: #000;
+    }
+
+    .marker-note {
+      margin-top: 20px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.35);
+      max-width: 280px;
+    }
+
+    .marker-note a {
+      color: #FF8830;
+      text-decoration: underline;
+    }
+
+    /* ── Score Popup ── */
+    .score-popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 99998;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 72px;
+      color: #FFD700;
+      text-shadow: 0 0 40px rgba(255, 215, 0, 0.8);
+      opacity: 0;
+      pointer-events: none;
+      animation: scoreAnim 1s ease forwards;
+    }
+
+    @keyframes scoreAnim {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+      20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+      40% { transform: translate(-50%, -50%) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -80%) scale(0.8); }
+    }
+
+    .miss-popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 99998;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 28px;
+      color: rgba(255,255,255,0.6);
+      opacity: 0;
+      pointer-events: none;
+      animation: missAnim 0.8s ease forwards;
+    }
+
+    @keyframes missAnim {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+      20% { opacity: 0.8; transform: translate(-50%, -50%) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -70%); }
+    }
+
+    /* ── No-marker fallback message ── */
+    #no-marker-msg {
+      position: fixed;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      background: rgba(0,0,0,0.7);
+      color: rgba(255,255,255,0.7);
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 13px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    #no-marker-msg.visible {
+      opacity: 1;
+    }
+
+    /* ── Crosshair ── */
+    #crosshair {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 9990;
+      width: 40px;
+      height: 40px;
+      pointer-events: none;
+    }
+
+    #crosshair::before,
+    #crosshair::after {
+      content: '';
+      position: absolute;
+      background: rgba(255, 136, 48, 0.4);
+    }
+
+    #crosshair::before {
+      width: 2px; height: 100%;
+      left: 50%; transform: translateX(-50%);
+    }
+
+    #crosshair::after {
+      height: 2px; width: 100%;
+      top: 50%; transform: translateY(-50%);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Instruction Screen ── -->
+  <div id="instructions">
+    <h1>AR BASKETBALL</h1>
+    <div class="subtitle">Augmented Reality</div>
+
+    <div class="instruction-step">
+      <div class="step-num">1</div>
+      <div class="step-text">Print or display the <strong>Hiro marker</strong> on a flat surface</div>
+    </div>
+    <div class="instruction-step">
+      <div class="step-num">2</div>
+      <div class="step-text">Point your camera at the marker to spawn the basketball hoop</div>
+    </div>
+    <div class="instruction-step">
+      <div class="step-num">3</div>
+      <div class="step-text">Tap the <strong>shoot button</strong> to launch basketballs at the hoop!</div>
+    </div>
+
+    <button class="start-btn" onclick="startGame()">START GAME</button>
+
+    <div class="marker-note">
+      Need a Hiro marker? Search "Hiro AR marker" or visit
+      <a href="https://au.gmented.com/app/marker/hiro" target="_blank">this link</a>
+    </div>
+  </div>
+
+  <!-- ── HUD ── -->
+  <div id="hud">
+    <div class="hud-panel score-panel">
+      <div class="score-label">Score</div>
+      <div class="score-value" id="score">0</div>
+    </div>
+    <div class="hud-panel streak-panel">
+      <div class="streak-label">Streak</div>
+      <div class="streak-value" id="streak">0</div>
+    </div>
+  </div>
+
+  <!-- ── Crosshair ── -->
+  <div id="crosshair"></div>
+
+  <!-- ── No-marker message ── -->
+  <div id="no-marker-msg">Point camera at Hiro marker</div>
+
+  <!-- ── Bottom Bar ── -->
+  <div id="bottom-bar">
+    <div class="power-bar-container">
+      <div class="power-bar-fill" id="power-fill"></div>
+    </div>
+    <button class="shoot-btn" id="shoot-btn" ontouchstart="onShootStart(event)" ontouchend="onShootEnd(event)" onmousedown="onShootStart(event)" onmouseup="onShootEnd(event)">
+      <span class="ball-icon">🏀</span>
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       A-Frame AR Scene
+       ══════════════════════════════════════════════ -->
+  <a-scene
+    embedded
+    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+    renderer="logarithmicDepthBuffer: true; antialias: true;"
+    vr-mode-ui="enabled: false"
+  >
+    <!-- Camera -->
+    <a-entity camera></a-entity>
+
+    <!-- Hiro Marker -->
+    <a-marker id="hiro-marker" preset="hiro" smooth="true" smoothCount="5" smoothTolerance="0.01" smoothThreshold="2">
+
+      <!-- ── Backboard ── -->
+      <a-box
+        position="0 2.2 0"
+        width="1.4"
+        height="1.0"
+        depth="0.08"
+        color="#FFFFFF"
+        material="opacity: 0.95; transparent: true"
+      ></a-box>
+
+      <!-- Backboard border -->
+      <a-box position="0 2.2 0.041" width="1.44" height="1.04" depth="0.005" color="#333333"></a-box>
+
+      <!-- Backboard square -->
+      <a-box position="0 2.05 0.045" width="0.6" height="0.45" depth="0.005" color="#FF4500" material="opacity: 0.3; transparent: true"></a-box>
+      <a-box position="0 2.05 0.046" width="0.62" height="0.47" depth="0.003" color="#FF4500" material="wireframe: true"></a-box>
+
+      <!-- ── Rim (torus) ── -->
+      <a-torus
+        id="rim"
+        position="0 1.75 0.45"
+        rotation="90 0 0"
+        radius="0.3"
+        radius-tubular="0.025"
+        segments-radial="16"
+        segments-tubular="32"
+        color="#FF4500"
+        material="metalness: 0.8; roughness: 0.3"
+      ></a-torus>
+
+      <!-- ── Rim connectors ── -->
+      <a-cylinder position="-0.15 1.75 0.22" rotation="90 0 0" radius="0.02" height="0.45" color="#888"></a-cylinder>
+      <a-cylinder position="0.15 1.75 0.22" rotation="90 0 0" radius="0.02" height="0.45" color="#888"></a-cylinder>
+
+      <!-- ── Net (stacked rings) ── -->
+      <a-torus position="0 1.75 0.55" rotation="90 0 0" radius="0.28" radius-tubular="0.008" color="#FFFFFF" material="opacity: 0.6; transparent: true"></a-torus>
+      <a-torus position="0 1.75 0.65" rotation="90 0 0" radius="0.24" radius-tubular="0.008" color="#FFFFFF" material="opacity: 0.5; transparent: true"></a-torus>
+      <a-torus position="0 1.75 0.75" rotation="90 0 0" radius="0.20" radius-tubular="0.008" color="#FFFFFF" material="opacity: 0.4; transparent: true"></a-torus>
+      <a-torus position="0 1.75 0.85" rotation="90 0 0" radius="0.16" radius-tubular="0.008" color="#FFFFFF" material="opacity: 0.3; transparent: true"></a-torus>
+
+      <!-- ── Pole ── -->
+      <a-cylinder position="0 1.1 -0.05" radius="0.06" height="2.2" color="#666666" material="metalness: 0.7; roughness: 0.4"></a-cylinder>
+
+      <!-- ── Base ── -->
+      <a-box position="0 0 -0.05" width="0.8" height="0.1" depth="0.8" color="#444"></a-box>
+
+      <!-- ── Court floor indicator ── -->
+      <a-plane
+        position="0 0.01 1.5"
+        rotation="-90 0 0"
+        width="3"
+        height="4"
+        color="#C67B30"
+        material="opacity: 0.4; transparent: true"
+      ></a-plane>
+
+      <!-- Free throw line -->
+      <a-plane position="0 0.02 2" rotation="-90 0 0" width="2" height="0.04" color="#FFFFFF" material="opacity: 0.7; transparent: true"></a-plane>
+
+      <!-- Three-point arc (simplified) -->
+      <a-torus position="0 0.02 0.5" rotation="90 0 0" radius="1.8" radius-tubular="0.02" segments-radial="8" segments-tubular="32" color="#FFFFFF" material="opacity: 0.4; transparent: true" theta-length="180"></a-torus>
+
+    </a-marker>
+  </a-scene>
+
+  <!-- ══════════════════════════════════════════════
+       Game Logic
+       ══════════════════════════════════════════════ -->
+  <script>
+    // State
+    let score = 0;
+    let streak = 0;
+    let bestStreak = 0;
+    let power = 50;
+    let charging = false;
+    let chargeDir = 1;
+    let markerVisible = false;
+    let balls = [];
+    const GRAVITY = -9.8;
+
+    // DOM
+    const scoreEl = document.getElementById('score');
+    const streakEl = document.getElementById('streak');
+    const powerFill = document.getElementById('power-fill');
+    const noMarkerMsg = document.getElementById('no-marker-msg');
+
+    // Marker detection
+    const marker = document.getElementById('hiro-marker');
+
+    marker.addEventListener('markerFound', () => {
+      markerVisible = true;
+      noMarkerMsg.classList.remove('visible');
+    });
+
+    marker.addEventListener('markerLost', () => {
+      markerVisible = false;
+      noMarkerMsg.classList.add('visible');
+    });
+
+    // Start game
+    function startGame() {
+      document.getElementById('instructions').classList.add('hidden');
+      noMarkerMsg.classList.add('visible');
+    }
+
+    // Shoot controls
+    function onShootStart(e) {
+      e.preventDefault();
+      charging = true;
+      chargeDir = 1;
+    }
+
+    function onShootEnd(e) {
+      e.preventDefault();
+      if (charging) {
+        charging = false;
+        shootBall(power / 100);
+      }
+    }
+
+    // Power bar animation
+    function updatePower() {
+      if (charging) {
+        power += chargeDir * 2;
+        if (power >= 100) { power = 100; chargeDir = -1; }
+        if (power <= 20) { power = 20; chargeDir = 1; }
+      }
+      powerFill.style.width = power + '%';
+
+      // Color based on power
+      if (power < 40) {
+        powerFill.style.background = 'linear-gradient(90deg, #FFD700, #FF8830)';
+      } else if (power < 70) {
+        powerFill.style.background = 'linear-gradient(90deg, #FF8830, #FF4500)';
+      } else {
+        powerFill.style.background = 'linear-gradient(90deg, #FF4500, #FF0000)';
+      }
+
+      requestAnimationFrame(updatePower);
+    }
+    updatePower();
+
+    // Shoot ball
+    function shootBall(powerFactor) {
+      if (!markerVisible) return;
+
+      const scene = document.querySelector('a-scene');
+
+      // Create ball entity
+      const ball = document.createElement('a-sphere');
+      ball.setAttribute('radius', '0.15');
+      ball.setAttribute('color', '#FF6B00');
+      ball.setAttribute('material', 'roughness: 0.6; metalness: 0.1');
+
+      // Get marker world position for the rim
+      const markerObj = marker.object3D;
+      const rimWorldPos = new THREE.Vector3(0, 1.75, 0.45);
+      markerObj.localToWorld(rimWorldPos);
+
+      // Get camera
+      const camera = document.querySelector('[camera]').object3D;
+      const camPos = new THREE.Vector3();
+      camera.getWorldPosition(camPos);
+
+      // Start ball at camera position, slightly forward
+      const camDir = new THREE.Vector3();
+      camera.getWorldDirection(camDir);
+      const startPos = camPos.clone().add(camDir.clone().multiplyScalar(0.5));
+
+      ball.setAttribute('position', `${startPos.x} ${startPos.y} ${startPos.z}`);
+      scene.appendChild(ball);
+
+      // Calculate trajectory to rim with some randomness
+      const targetPos = rimWorldPos.clone();
+
+      // Add slight randomness for realism
+      const accuracy = 0.85 + powerFactor * 0.15; // Better power = better accuracy
+      const randomOffset = new THREE.Vector3(
+        (Math.random() - 0.5) * (1 - accuracy) * 2,
+        (Math.random() - 0.5) * (1 - accuracy),
+        (Math.random() - 0.5) * (1 - accuracy) * 2
+      );
+      targetPos.add(randomOffset);
+
+      // Physics: calculate initial velocity for arc trajectory
+      const dx = targetPos.x - startPos.x;
+      const dy = targetPos.y - startPos.y;
+      const dz = targetPos.z - startPos.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+
+      const speed = 4 + powerFactor * 4;
+      const time = dist / speed || 1;
+
+      const vx = dx / time;
+      const vz = dz / time;
+      const vy = (dy - 0.5 * GRAVITY * time * time) / time;
+
+      // Ball physics state
+      const ballState = {
+        el: ball,
+        pos: startPos.clone(),
+        vel: new THREE.Vector3(vx, vy, vz),
+        time: 0,
+        scored: false,
+        missed: false,
+        rimPos: rimWorldPos.clone()
+      };
+
+      balls.push(ballState);
+
+      // Remove ball after 4 seconds
+      setTimeout(() => {
+        if (ball.parentNode) ball.parentNode.removeChild(ball);
+        const idx = balls.indexOf(ballState);
+        if (idx > -1) balls.splice(idx, 1);
+
+        // Check if we never scored
+        if (!ballState.scored && !ballState.missed) {
+          onMiss();
+        }
+      }, 4000);
+    }
+
+    // Animation loop for ball physics
+    let lastTime = 0;
+    function gameLoop(timestamp) {
+      const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+      lastTime = timestamp;
+
+      balls.forEach(b => {
+        if (b.scored || b.missed) return;
+
+        // Update velocity (gravity)
+        b.vel.y += GRAVITY * dt;
+
+        // Update position
+        b.pos.x += b.vel.x * dt;
+        b.pos.y += b.vel.y * dt;
+        b.pos.z += b.vel.z * dt;
+
+        // Apply to element
+        b.el.setAttribute('position', `${b.pos.x} ${b.pos.y} ${b.pos.z}`);
+
+        // Spin the ball
+        b.time += dt;
+        b.el.setAttribute('rotation', `${b.time * 360} 0 ${b.time * 180}`);
+
+        // Check scoring - ball passes through rim area
+        const rimDist = Math.sqrt(
+          Math.pow(b.pos.x - b.rimPos.x, 2) +
+          Math.pow(b.pos.z - b.rimPos.z, 2)
+        );
+
+        const yDiff = b.pos.y - b.rimPos.y;
+
+        // Score if ball is close to rim horizontally and passing through vertically downward
+        if (rimDist < 0.3 && Math.abs(yDiff) < 0.25 && b.vel.y < 0) {
+          b.scored = true;
+          onScore();
+
+          // Visual feedback: ball drops through
+          b.vel.x *= 0.2;
+          b.vel.z *= 0.2;
+        }
+
+        // Miss detection: ball falls below marker
+        if (b.pos.y < -2) {
+          b.missed = true;
+          onMiss();
+        }
+      });
+
+      requestAnimationFrame(gameLoop);
+    }
+    requestAnimationFrame(gameLoop);
+
+    // Score!
+    function onScore() {
+      streak++;
+      const points = streak >= 3 ? 3 : 2;
+      score += points;
+
+      scoreEl.textContent = score;
+      streakEl.textContent = streak;
+
+      if (streak >= 3) {
+        streakEl.classList.add('fire');
+      }
+
+      // Popup
+      const popup = document.createElement('div');
+      popup.className = 'score-popup';
+      popup.textContent = streak >= 3 ? `+${points} 🔥` : `+${points}`;
+      document.body.appendChild(popup);
+      setTimeout(() => popup.remove(), 1000);
+
+      // Vibrate if available
+      if (navigator.vibrate) navigator.vibrate(100);
+    }
+
+    // Miss
+    function onMiss() {
+      if (streak > bestStreak) bestStreak = streak;
+      streak = 0;
+      streakEl.textContent = '0';
+      streakEl.classList.remove('fire');
+
+      const popup = document.createElement('div');
+      popup.className = 'miss-popup';
+      popup.textContent = 'MISS';
+      document.body.appendChild(popup);
+      setTimeout(() => popup.remove(), 800);
+    }
+  </script>
+
+</body>
+</html>
