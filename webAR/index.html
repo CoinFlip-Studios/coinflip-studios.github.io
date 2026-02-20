@@ -2,17 +2,15 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
   <title>AR Basketball</title>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    html,body{width:100%;height:100%;overflow:hidden;background:#000}
-    body{touch-action:none;-webkit-user-select:none;user-select:none;font-family:sans-serif;position:fixed;inset:0}
+    body{margin:0;overflow:hidden;font-family:sans-serif}
     #score{position:fixed;top:20px;left:20px;z-index:9999;color:#fff;font-size:24px;text-shadow:0 2px 4px rgba(0,0,0,0.5);pointer-events:none}
-    #swipe-zone{position:fixed;inset:0;z-index:9998;touch-action:none}
-    .swipe-trail{position:fixed;z-index:9997;pointer-events:none;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle,rgba(255,100,0,0.7),transparent);opacity:0;animation:trailFade .4s ease forwards}
+    #swipe-zone{position:fixed;top:0;left:0;width:100%;height:100%;z-index:100;touch-action:none}
+    .swipe-trail{position:fixed;z-index:99;pointer-events:none;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle,rgba(255,100,0,0.7),transparent);animation:trailFade .4s ease forwards}
     @keyframes trailFade{0%{opacity:.8;transform:scale(1)}100%{opacity:0;transform:scale(.2)}}
   </style>
 </head>
@@ -21,7 +19,7 @@
 <div id="score">Score: 0</div>
 <div id="swipe-zone"></div>
 
-<a-scene embedded arjs="sourceType:webcam;debugUIEnabled:false;detectionMode:mono_and_matrix;matrixCodeType:3x3;" renderer="logarithmicDepthBuffer:true;antialias:true;alpha:true;" vr-mode-ui="enabled:false">
+<a-scene embedded arjs="sourceType:webcam;debugUIEnabled:false;" vr-mode-ui="enabled:false" renderer="antialias:true;alpha:true;">
   <a-entity camera></a-entity>
   <a-marker id="hiro-marker" preset="hiro" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="2"></a-marker>
   <a-entity id="hoop-container" visible="false">
@@ -44,23 +42,22 @@
 </a-scene>
 
 <script>
-document.addEventListener('touchmove',function(e){e.preventDefault();},{passive:false});
+var sceneEl=document.querySelector('a-scene');
+sceneEl.addEventListener('loaded',function(){
+  var GRAVITY=-9.8,BALL_R=0.16,FRICTION=0.25;
+  var NET_RINGS=[{id:'net0',oy:0,oz:0.10,or:0.29},{id:'net1',oy:0,oz:0.18,or:0.26},{id:'net2',oy:0,oz:0.26,or:0.23},{id:'net3',oy:0,oz:0.34,or:0.20},{id:'net4',oy:0,oz:0.42,or:0.17},{id:'net5',oy:0,oz:0.50,or:0.13}];
+  var netState=NET_RINGS.map(function(r){return{el:null,id:r.id,oy:r.oy,oz:r.oz,or:r.or,offsetX:0,offsetY:0,velX:0,velY:0};});
+  var C={rim:{cx:0,cy:0,cz:0.05,majorR:0.32,tubeR:0.028,bounce:0.55},backboard:{cx:0,cy:0,cz:-0.5,hw:0.75,hh:0.55,hd:0.04,bounce:0.45}};
 
-document.querySelector('a-scene').addEventListener('loaded', function() {
-  const GRAVITY=-9.8,BALL_R=0.16,FRICTION=0.25;
-  const NET_RINGS=[{id:'net0',oy:0,oz:0.10,or:0.29},{id:'net1',oy:0,oz:0.18,or:0.26},{id:'net2',oy:0,oz:0.26,or:0.23},{id:'net3',oy:0,oz:0.34,or:0.20},{id:'net4',oy:0,oz:0.42,or:0.17},{id:'net5',oy:0,oz:0.50,or:0.13}];
-  const netState=NET_RINGS.map(r=>({el:null,...r,offsetX:0,offsetY:0,velX:0,velY:0}));
-  const C={rim:{cx:0,cy:0,cz:0.05,majorR:0.32,tubeR:0.028,bounce:0.55},backboard:{cx:0,cy:0,cz:-0.5,hw:0.75,hh:0.55,hd:0.04,bounce:0.45}};
+  var score=0,markerVisible=false,hoopInitialized=false,balls=[],swipeStart=null;
+  var hoopWorldMatrix=new THREE.Matrix4(),hoopWorldMatrixInverse=new THREE.Matrix4();
 
-  let score=0,markerVisible=false,hoopInitialized=false,balls=[],swipeStart=null;
-  let hoopWorldMatrix=new THREE.Matrix4(),hoopWorldMatrixInverse=new THREE.Matrix4();
+  var scoreEl=document.getElementById('score'),swipeZone=document.getElementById('swipe-zone'),markerEl=document.getElementById('hiro-marker'),hoopContainer=document.getElementById('hoop-container'),hoopPivot=document.getElementById('hoop-pivot');
 
-  const scoreEl=document.getElementById('score'),swipeZone=document.getElementById('swipe-zone'),sceneEl=document.querySelector('a-scene'),markerEl=document.getElementById('hiro-marker'),hoopContainer=document.getElementById('hoop-container'),hoopPivot=document.getElementById('hoop-pivot');
+  netState.forEach(function(ns){ns.el=document.getElementById(ns.id);});
 
-  netState.forEach(ns=>{ns.el=document.getElementById(ns.id);});
-
-  markerEl.addEventListener('markerFound',()=>{markerVisible=true;hoopInitialized=true;hoopContainer.setAttribute('visible','true');});
-  markerEl.addEventListener('markerLost',()=>{markerVisible=false;});
+  markerEl.addEventListener('markerFound',function(){markerVisible=true;hoopInitialized=true;hoopContainer.setAttribute('visible','true');});
+  markerEl.addEventListener('markerLost',function(){markerVisible=false;});
 
   function getXY(e){
     if(e.touches&&e.touches[0])return{x:e.touches[0].clientX,y:e.touches[0].clientY};
@@ -68,9 +65,35 @@ document.querySelector('a-scene').addEventListener('loaded', function() {
     return{x:e.clientX||0,y:e.clientY||0};
   }
 
-  function tsS(e){e.preventDefault();if(!hoopInitialized)return;const t=getXY(e);swipeStart={x:t.x,y:t.y,time:Date.now()};}
-  function tsM(e){e.preventDefault();if(!swipeStart)return;const t=getXY(e);const tr=document.createElement('div');tr.className='swipe-trail';tr.style.left=(t.x-7)+'px';tr.style.top=(t.y-7)+'px';document.body.appendChild(tr);setTimeout(()=>tr.remove(),400);}
-  function tsE(e){e.preventDefault();if(!swipeStart)return;const t=getXY(e);const dx=t.x-swipeStart.x,dy=t.y-swipeStart.y,dt=(Date.now()-swipeStart.time)/1000;swipeStart=null;if(dy>-20)return;const dist=Math.sqrt(dx*dx+dy*dy),speed=dist/Math.max(dt,0.05),hBias=dx/window.innerWidth,power=Math.min(Math.max(speed/1200,0.3),1.0);shoot(power,hBias);}
+  function tsS(e){
+    e.preventDefault();
+    if(!hoopInitialized)return;
+    var t=getXY(e);
+    swipeStart={x:t.x,y:t.y,time:Date.now()};
+  }
+
+  function tsM(e){
+    e.preventDefault();
+    if(!swipeStart)return;
+    var t=getXY(e);
+    var tr=document.createElement('div');
+    tr.className='swipe-trail';
+    tr.style.left=(t.x-7)+'px';
+    tr.style.top=(t.y-7)+'px';
+    document.body.appendChild(tr);
+    setTimeout(function(){tr.remove();},400);
+  }
+
+  function tsE(e){
+    e.preventDefault();
+    if(!swipeStart)return;
+    var t=getXY(e);
+    var dx=t.x-swipeStart.x,dy=t.y-swipeStart.y,dt=(Date.now()-swipeStart.time)/1000;
+    swipeStart=null;
+    if(dy>-20)return;
+    var dist=Math.sqrt(dx*dx+dy*dy),speed=dist/Math.max(dt,0.05),hBias=dx/window.innerWidth,power=Math.min(Math.max(speed/1200,0.3),1.0);
+    shoot(power,hBias);
+  }
 
   swipeZone.addEventListener('touchstart',tsS,{passive:false});
   swipeZone.addEventListener('touchmove',tsM,{passive:false});
@@ -81,25 +104,25 @@ document.querySelector('a-scene').addEventListener('loaded', function() {
 
   function shoot(power,hBias){
     if(!hoopInitialized)return;
-    const ball=document.createElement('a-sphere');
+    var ball=document.createElement('a-sphere');
     ball.setAttribute('radius',String(BALL_R));
     ball.setAttribute('color','#FF6D00');
     ball.setAttribute('material','roughness:0.55;metalness:0.1');
-    const rimLocal=new THREE.Vector3(0,0,0.05),rimW=rimLocal.clone().applyMatrix4(hoopWorldMatrix);
-    const cam=document.querySelector('[camera]').object3D,cp=new THREE.Vector3(),cd=new THREE.Vector3();
+    var rimLocal=new THREE.Vector3(0,0,0.05),rimW=rimLocal.clone().applyMatrix4(hoopWorldMatrix);
+    var cam=document.querySelector('[camera]').object3D,cp=new THREE.Vector3(),cd=new THREE.Vector3();
     cam.getWorldPosition(cp);cam.getWorldDirection(cd);
-    const sp=cp.clone().add(cd.clone().multiplyScalar(0.4)).add(new THREE.Vector3(0,-0.3,0));
-    ball.setAttribute('position',`${sp.x} ${sp.y} ${sp.z}`);
+    var sp=cp.clone().add(cd.clone().multiplyScalar(0.4)).add(new THREE.Vector3(0,-0.3,0));
+    ball.setAttribute('position',sp.x+' '+sp.y+' '+sp.z);
     sceneEl.appendChild(ball);
-    const tp=rimW.clone(),cr=new THREE.Vector3();
+    var tp=rimW.clone(),cr=new THREE.Vector3();
     cr.crossVectors(cd,new THREE.Vector3(0,1,0)).normalize();
     tp.add(cr.clone().multiplyScalar(hBias*1.2));
-    const acc=0.7+power*0.3;
-    tp.add(new THREE.Vector3((Math.random()-.5)*(1-acc)*.8,(Math.random()-.5)*(1-acc)*.4,(Math.random()-.5)*(1-acc)*.8));
-    const d=tp.clone().sub(sp),hDist=Math.sqrt(d.x*d.x+d.z*d.z),spd=3.5+power*5,ft=hDist/spd||0.8;
-    const b={el:ball,pos:sp.clone(),vel:new THREE.Vector3(d.x/ft,(d.y-0.5*GRAVITY*ft*ft)/ft,d.z/ft),time:0,settled:false,scored:false,bounces:0,cooldowns:{},passedNetRings:new Set(),inNet:false};
+    var acc=0.7+power*0.3;
+    tp.add(new THREE.Vector3((Math.random()-0.5)*(1-acc)*0.8,(Math.random()-0.5)*(1-acc)*0.4,(Math.random()-0.5)*(1-acc)*0.8));
+    var d=tp.clone().sub(sp),hDist=Math.sqrt(d.x*d.x+d.z*d.z),spd=3.5+power*5,ft=hDist/spd||0.8;
+    var b={el:ball,pos:sp.clone(),vel:new THREE.Vector3(d.x/ft,(d.y-0.5*GRAVITY*ft*ft)/ft,d.z/ft),time:0,settled:false,scored:false,bounces:0,cooldowns:{},passedNetRings:new Set(),inNet:false};
     balls.push(b);
-    setTimeout(()=>{if(ball.parentNode)ball.parentNode.removeChild(ball);const i=balls.indexOf(b);if(i>-1)balls.splice(i,1);},8000);
+    setTimeout(function(){if(ball.parentNode)ball.parentNode.removeChild(ball);var i=balls.indexOf(b);if(i>-1)balls.splice(i,1);},8000);
     if(navigator.vibrate)navigator.vibrate(30);
   }
 
@@ -108,30 +131,30 @@ document.querySelector('a-scene').addEventListener('loaded', function() {
   function velW2L(v){return v.clone().applyMatrix3(new THREE.Matrix3().setFromMatrix4(hoopWorldMatrixInverse));}
   function velL2W(v){return v.clone().applyMatrix3(new THREE.Matrix3().setFromMatrix4(hoopWorldMatrix));}
 
-  function reflect(vel,n,rest){const vn=vel.dot(n);if(vn>=0)return false;const vnV=n.clone().multiplyScalar(vn),vtV=vel.clone().sub(vnV);vel.copy(vtV.multiplyScalar(1-FRICTION).add(vnV.multiplyScalar(-rest)));return true;}
+  function reflect(vel,n,rest){var vn=vel.dot(n);if(vn>=0)return false;var vnV=n.clone().multiplyScalar(vn),vtV=vel.clone().sub(vnV);vel.copy(vtV.multiplyScalar(1-FRICTION).add(vnV.multiplyScalar(-rest)));return true;}
 
-  const RIM_SAMPLES=16;
+  var RIM_SAMPLES=16;
   function hitRim(p,v,rim){
-    const{cx,cy,cz,majorR,tubeR,bounce}=rim;
-    let closestDist=Infinity,closestNormal=null,closestPen=0;
-    for(let i=0;i<RIM_SAMPLES;i++){const angle=(i/RIM_SAMPLES)*Math.PI*2,ringX=cx+Math.cos(angle)*majorR,ringY=cy+Math.sin(angle)*majorR,dx=p.x-ringX,dy=p.y-ringY,dz=p.z-cz,dist=Math.sqrt(dx*dx+dy*dy+dz*dz),minDist=BALL_R+tubeR;if(dist<minDist&&dist>0.001&&dist<closestDist){closestDist=dist;closestNormal=new THREE.Vector3(dx/dist,dy/dist,dz/dist);closestPen=minDist-dist;}}
-    const dx0=p.x-cx,dy0=p.y-cy,dXY=Math.sqrt(dx0*dx0+dy0*dy0);
-    if(dXY>0.001){const rx=cx+(dx0/dXY)*majorR,ry=cy+(dy0/dXY)*majorR,tdx=p.x-rx,tdy=p.y-ry,tdz=p.z-cz,td=Math.sqrt(tdx*tdx+tdy*tdy+tdz*tdz),minD=BALL_R+tubeR;if(td<minD&&td>0.001&&td<closestDist){closestDist=td;closestNormal=new THREE.Vector3(tdx/td,tdy/td,tdz/td);closestPen=minD-td;}}
+    var cx=rim.cx,cy=rim.cy,cz=rim.cz,majorR=rim.majorR,tubeR=rim.tubeR,bounce=rim.bounce;
+    var closestDist=Infinity,closestNormal=null,closestPen=0;
+    for(var i=0;i<RIM_SAMPLES;i++){var angle=(i/RIM_SAMPLES)*Math.PI*2,ringX=cx+Math.cos(angle)*majorR,ringY=cy+Math.sin(angle)*majorR,dx=p.x-ringX,dy=p.y-ringY,dz=p.z-cz,dist=Math.sqrt(dx*dx+dy*dy+dz*dz),minDist=BALL_R+tubeR;if(dist<minDist&&dist>0.001&&dist<closestDist){closestDist=dist;closestNormal=new THREE.Vector3(dx/dist,dy/dist,dz/dist);closestPen=minDist-dist;}}
+    var dx0=p.x-cx,dy0=p.y-cy,dXY=Math.sqrt(dx0*dx0+dy0*dy0);
+    if(dXY>0.001){var rx=cx+(dx0/dXY)*majorR,ry=cy+(dy0/dXY)*majorR,tdx=p.x-rx,tdy=p.y-ry,tdz=p.z-cz,td=Math.sqrt(tdx*tdx+tdy*tdy+tdz*tdz),minD=BALL_R+tubeR;if(td<minD&&td>0.001&&td<closestDist){closestDist=td;closestNormal=new THREE.Vector3(tdx/td,tdy/td,tdz/td);closestPen=minD-td;}}
     if(closestNormal){p.x+=closestNormal.x*closestPen;p.y+=closestNormal.y*closestPen;p.z+=closestNormal.z*closestPen;reflect(v,closestNormal,bounce);return true;}
     return false;
   }
 
-  function hitBox(p,v,b){const clx=Math.max(b.cx-b.hw,Math.min(p.x,b.cx+b.hw)),cly=Math.max(b.cy-b.hh,Math.min(p.y,b.cy+b.hh)),clz=Math.max(b.cz-b.hd,Math.min(p.z,b.cz+b.hd)),dx=p.x-clx,dy=p.y-cly,dz=p.z-clz,dist=Math.sqrt(dx*dx+dy*dy+dz*dz);if(dist<BALL_R&&dist>0.001){const n=new THREE.Vector3(dx,dy,dz).normalize(),pen=BALL_R-dist;p.x+=n.x*pen;p.y+=n.y*pen;p.z+=n.z*pen;reflect(v,n,b.bounce);return true;}return false;}
+  function hitBox(p,v,b){var clx=Math.max(b.cx-b.hw,Math.min(p.x,b.cx+b.hw)),cly=Math.max(b.cy-b.hh,Math.min(p.y,b.cy+b.hh)),clz=Math.max(b.cz-b.hd,Math.min(p.z,b.cz+b.hd)),dx=p.x-clx,dy=p.y-cly,dz=p.z-clz,dist=Math.sqrt(dx*dx+dy*dy+dz*dz);if(dist<BALL_R&&dist>0.001){var n=new THREE.Vector3(dx,dy,dz).normalize(),pen=BALL_R-dist;p.x+=n.x*pen;p.y+=n.y*pen;p.z+=n.z*pen;reflect(v,n,b.bounce);return true;}return false;}
 
-  const NET_SPRING=80,NET_DAMP=8,NET_PUSH=1.2;
-  function updateNet(dt){for(const ns of netState){if(!ns.el)continue;const ax=-NET_SPRING*ns.offsetX-NET_DAMP*ns.velX,ay=-NET_SPRING*ns.offsetY-NET_DAMP*ns.velY;ns.velX+=ax*dt;ns.velY+=ay*dt;ns.offsetX+=ns.velX*dt;ns.offsetY+=ns.velY*dt;ns.offsetX=Math.max(-0.15,Math.min(0.15,ns.offsetX));ns.offsetY=Math.max(-0.15,Math.min(0.15,ns.offsetY));ns.el.setAttribute('position',`${ns.offsetX.toFixed(4)} ${(-ns.oz+ns.offsetY).toFixed(4)} 0`);}}
+  var NET_SPRING=80,NET_DAMP=8,NET_PUSH=1.2;
+  function updateNet(dt){for(var i=0;i<netState.length;i++){var ns=netState[i];if(!ns.el)continue;var ax=-NET_SPRING*ns.offsetX-NET_DAMP*ns.velX,ay=-NET_SPRING*ns.offsetY-NET_DAMP*ns.velY;ns.velX+=ax*dt;ns.velY+=ay*dt;ns.offsetX+=ns.velX*dt;ns.offsetY+=ns.velY*dt;ns.offsetX=Math.max(-0.15,Math.min(0.15,ns.offsetX));ns.offsetY=Math.max(-0.15,Math.min(0.15,ns.offsetY));ns.el.setAttribute('position',ns.offsetX.toFixed(4)+' '+(-ns.oz+ns.offsetY).toFixed(4)+' 0');}}
 
-  function pushNetRing(idx,lp,lv){const ns=netState[idx];if(!ns)return;ns.velX+=(lp.x*NET_PUSH+lv.x*0.05)*15;ns.velY+=((lp.y)*NET_PUSH+lv.y*0.05)*15;}
+  function pushNetRing(idx,lp,lv){var ns=netState[idx];if(!ns)return;ns.velX+=(lp.x*NET_PUSH+lv.x*0.05)*15;ns.velY+=((lp.y)*NET_PUSH+lv.y*0.05)*15;}
 
   function checkNetPassThrough(b,lp,lv){
-    for(let i=0;i<NET_RINGS.length;i++){
+    for(var i=0;i<NET_RINGS.length;i++){
       if(b.passedNetRings.has(i))continue;
-      const ring=NET_RINGS[i],dxR=lp.x-C.rim.cx,dyR=lp.y-C.rim.cy,distFromCenter=Math.sqrt(dxR*dxR+dyR*dyR);
+      var ring=NET_RINGS[i],dxR=lp.x-C.rim.cx,dyR=lp.y-C.rim.cy,distFromCenter=Math.sqrt(dxR*dxR+dyR*dyR);
       if(distFromCenter<ring.or+BALL_R*0.5&&lp.z>ring.oz-BALL_R&&lp.z<ring.oz+BALL_R*2&&lv.z>0){
         b.passedNetRings.add(i);
         pushNetRing(i,lp,lv);
@@ -147,12 +170,12 @@ document.querySelector('a-scene').addEventListener('loaded', function() {
     }
   }
 
-  let lt=performance.now();
+  var lt=performance.now();
   function loop(now){
-    const dt=Math.min((now-lt)/1000,0.05);
+    var dt=Math.min((now-lt)/1000,0.05);
     lt=now;
     if(markerVisible){
-      const markerObj=markerEl.object3D;
+      var markerObj=markerEl.object3D;
       markerObj.updateMatrixWorld(true);
       hoopPivot.object3D.updateMatrixWorld(true);
       hoopWorldMatrix.copy(hoopPivot.object3D.matrixWorld);
@@ -163,18 +186,19 @@ document.querySelector('a-scene').addEventListener('loaded', function() {
     }
     updateNet(dt);
     if(!hoopInitialized){requestAnimationFrame(loop);return;}
-    for(const b of balls){
+    for(var j=0;j<balls.length;j++){
+      var b=balls[j];
       if(b.settled)continue;
       b.vel.y+=GRAVITY*dt;b.pos.x+=b.vel.x*dt;b.pos.y+=b.vel.y*dt;b.pos.z+=b.vel.z*dt;
-      const lp=w2l(b.pos),lv=velW2L(b.vel),ms=Date.now();
+      var lp=w2l(b.pos),lv=velW2L(b.vel),ms=Date.now();
       if(!b.cooldowns.rim||ms-b.cooldowns.rim>80){if(hitRim(lp,lv,C.rim)){b.bounces++;b.cooldowns.rim=ms;if(navigator.vibrate)navigator.vibrate(15);}}
       if(!b.cooldowns.bb||ms-b.cooldowns.bb>120){if(hitBox(lp,lv,C.backboard)){b.bounces++;b.cooldowns.bb=ms;if(navigator.vibrate)navigator.vibrate(15);}}
       checkNetPassThrough(b,lp,lv);
       b.pos.copy(l2w(lp));b.vel.copy(velL2W(lv));
-      b.el.setAttribute('position',`${b.pos.x} ${b.pos.y} ${b.pos.z}`);
+      b.el.setAttribute('position',b.pos.x+' '+b.pos.y+' '+b.pos.z);
       b.time+=dt;
-      const spin=b.inNet?50:400;
-      b.el.setAttribute('rotation',`${b.time*spin} ${b.time*spin*0.3} 0`);
+      var spin=b.inNet?50:400;
+      b.el.setAttribute('rotation',(b.time*spin)+' '+(b.time*spin*0.3)+' 0');
       if(b.pos.y<-10)b.settled=true;
     }
     requestAnimationFrame(loop);
