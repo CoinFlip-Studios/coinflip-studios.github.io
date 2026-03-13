@@ -13,35 +13,38 @@
   .screen {
     position:fixed; inset:0; z-index:50;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    background:rgba(0,0,0,0.7);
+    background:rgba(0,0,0,0.75);
   }
-  .box {
-    background:#3c3c3c; border:1px solid #888;
-    padding:28px 36px; text-align:center; width:280px;
-  }
-  .box h1 { color:#ddd; font-size:14px; margin-bottom:8px; letter-spacing:2px; }
-  .box p  { color:#888; font-size:9px; margin-bottom:20px; line-height:1.8; }
+  .box { background:#3c3c3c; border:1px solid #888; padding:28px 36px; text-align:center; width:290px; }
+  .box h1 { color:#ddd; font-size:14px; margin-bottom:6px; letter-spacing:2px; }
+  .box p  { color:#888; font-size:9px; margin-bottom:20px; line-height:1.9; }
   .btn {
     font-family:'Courier New',monospace; font-size:10px;
     padding:9px 0; width:100%; background:#555; color:#ddd;
-    border:1px solid #888; cursor:pointer; display:block; margin:5px 0;
-    letter-spacing:1px;
+    border:1px solid #888; cursor:pointer; display:block; margin:5px 0; letter-spacing:1px;
   }
   .btn:hover { background:#666; }
   .btn.go { background:#4a6a4a; border-color:#6a9a6a; }
   .btn.go:hover { background:#5a7a5a; }
+
+  #hint {
+    position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+    z-index:20; color:rgba(255,255,255,0.4); font-size:9px;
+    pointer-events:none; text-align:center; line-height:1.8; white-space:nowrap;
+  }
 </style>
 </head>
 <body>
 
 <video id="bg-video" autoplay playsinline muted></video>
 <canvas id="c"></canvas>
+<div id="hint"></div>
 
 <div class="screen" id="start">
   <div class="box">
     <h1>PROTOTYPE</h1>
-    <p>Tap to shoot.<br>Hit the box.</p>
-    <button class="btn go" id="btn-cam">Play with Camera</button>
+    <p>Move your camera to aim.<br>Boxes are fixed in space.<br>Tap to shoot when a box<br>is under the crosshair.</p>
+    <button class="btn go" id="btn-cam">Play with Camera (AR)</button>
     <button class="btn" id="btn-plain">Play without Camera</button>
   </div>
 </div>
@@ -56,7 +59,30 @@ window.addEventListener('resize', resize);
 
 let useCam = false;
 let running = false;
-let boxes = [];
+
+// ── DEVICE ORIENTATION ────────────────────────────────────────────────────
+// Boxes live in "world space". As you rotate the device, the world offset
+// shifts, making boxes appear fixed in space while the crosshair stays center.
+let orient = { beta: 0, gamma: 0 };
+let baseOrient = null;
+const SENS = 5.5; // px shift per degree
+
+window.addEventListener('deviceorientation', e => {
+  if (e.gamma === null) return;
+  orient.beta  = e.beta  || 0;
+  orient.gamma = e.gamma || 0;
+}, true);
+
+function worldOffset() {
+  if (!baseOrient) return { ox:0, oy:0 };
+  const dG = orient.gamma - baseOrient.gamma;
+  const dB = orient.beta  - baseOrient.beta;
+  // clamp so boxes don't fly too far off in one direction
+  return {
+    ox: -Math.max(-W, Math.min(W, dG * SENS * (W/100))),
+    oy: -Math.max(-H, Math.min(H, dB * SENS * (H/100))),
+  };
+}
 
 // ── AUDIO ──────────────────────────────────────────────────────────────────
 const AC = new (window.AudioContext || window.webkitAudioContext)();
@@ -74,31 +100,38 @@ function sndHit(){
   o.connect(g); g.connect(AC.destination); o.start(); o.stop(AC.currentTime+.15);
 }
 
-// ── BOX ────────────────────────────────────────────────────────────────────
+// ── BOXES ─────────────────────────────────────────────────────────────────
+// wx/wy = offset from screen center in world space (pixels at rest)
+let boxes = [];
+
 function spawnBox(){
-  const goRight = Math.random() > .5;
-  const size = 48 + Math.random() * 24;
+  const spread = 1.3;
   boxes.push({
-    x: goRight ? -size : W + size,
-    y: H*.12 + Math.random() * (H*.6),
-    size,
-    vx: (1.5 + Math.random() * 1.5) * (goRight ? 1 : -1),
-    vy: (Math.random() - .5) * .8,
-    goRight,
+    wx: (Math.random() - 0.5) * W * spread,
+    wy: (Math.random() - 0.5) * H * 0.6,
+    vwx: (Math.random() - 0.5) * 0.3,  // slow world-space drift
+    vwy: (Math.random() - 0.5) * 0.15,
+    size: 52 + Math.random() * 26,
     alive: true,
-    hit: false, hitTimer: 0,
-    falling: false, fallVy: 0, fallAlpha: 1, fallAngle: 0,
+    falling: false, fallVy: 0, fallAngle: 0, fallAlpha: 1,
+    fallSx: 0, fallSy: 0, // screen pos when hit
   });
+}
+
+function toScreen(wx, wy){
+  const {ox, oy} = worldOffset();
+  return { sx: W/2 + wx + ox, sy: H/2 + wy + oy };
 }
 
 // ── CROSSHAIR ──────────────────────────────────────────────────────────────
 let xhPulse = 0;
 function drawCrosshair(){
   const cx = W/2, cy = H/2;
-  const s = 1 + xhPulse * .5;
+  const s = 1 + xhPulse*.5;
   const r = 20*s, arm = 12*s, gap = 5*s;
+  const alpha = .75 + xhPulse*.25;
   ctx.save();
-  ctx.strokeStyle = `rgba(255,255,255,${.7 + xhPulse*.3})`;
+  ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
   ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
   ctx.beginPath();
@@ -107,69 +140,59 @@ function drawCrosshair(){
   ctx.moveTo(cx-r-gap, cy); ctx.lineTo(cx-r-gap-arm, cy);
   ctx.moveTo(cx+r+gap, cy); ctx.lineTo(cx+r+gap+arm, cy);
   ctx.stroke();
-  ctx.fillStyle = `rgba(255,255,255,${.7+xhPulse*.3})`;
+  ctx.fillStyle = `rgba(255,255,255,${alpha})`;
   ctx.beginPath(); ctx.arc(cx, cy, 2.5, 0, Math.PI*2); ctx.fill();
   ctx.restore();
-  if(xhPulse > 0) xhPulse = Math.max(0, xhPulse - .08);
+  if(xhPulse>0) xhPulse = Math.max(0, xhPulse-.08);
 }
 
 // ── BACKGROUND ─────────────────────────────────────────────────────────────
 function drawBG(){
   if(useCam) return;
-  ctx.fillStyle = '#5a5a5a';
-  ctx.fillRect(0,0,W,H);
-  ctx.fillStyle = '#484848';
-  ctx.fillRect(0, H*.72, W, H*.28);
-  ctx.strokeStyle = '#666';
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(0, H*.72); ctx.lineTo(W, H*.72); ctx.stroke();
+  ctx.fillStyle='#5a5a5a'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#484848'; ctx.fillRect(0,H*.72,W,H*.28);
+  ctx.strokeStyle='#666'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,H*.72); ctx.lineTo(W,H*.72); ctx.stroke();
 }
 
 // ── PARTICLES ──────────────────────────────────────────────────────────────
 let particles = [];
 function spawnHit(x, y, size){
   for(let i=0;i<8;i++){
-    const a = Math.random()*Math.PI*2;
-    const sp = 2 + Math.random()*5;
-    particles.push({
-      x, y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp-2,
-      life:1, decay:.04, w: 4+Math.random()*(size*.2),
-    });
+    const a=Math.random()*Math.PI*2, sp=2+Math.random()*5;
+    particles.push({ x, y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp-2, life:1, decay:.04, w:3+Math.random()*(size*.15) });
   }
 }
 function updateParticles(){
   particles = particles.filter(p=>{
     p.x+=p.vx; p.y+=p.vy; p.vy+=.25; p.life-=p.decay;
-    ctx.save(); ctx.globalAlpha=p.life;
-    ctx.fillStyle='#aaa';
+    ctx.save(); ctx.globalAlpha=p.life; ctx.fillStyle='#aaa';
     ctx.fillRect(p.x-p.w/2, p.y-p.w/2, p.w, p.w);
-    ctx.restore();
-    return p.life>0;
+    ctx.restore(); return p.life>0;
   });
 }
 
 // ── FIRE ───────────────────────────────────────────────────────────────────
 function fire(){
   if(!running) return;
-  AC.resume();
-  sndShot();
-  xhPulse = 1;
-
-  const cx = W/2, cy = H/2;
-  const hit = boxes.find(b => b.alive && !b.falling &&
-    Math.abs(b.x - cx) < b.size/2 + 4 &&
-    Math.abs(b.y - cy) < b.size/2 + 4
-  );
+  AC.resume(); sndShot(); xhPulse=1;
+  const cx=W/2, cy=H/2;
+  const hit = boxes.find(b=>{
+    if(!b.alive||b.falling) return false;
+    const {sx,sy}=toScreen(b.wx,b.wy);
+    return Math.abs(sx-cx)<b.size/2+4 && Math.abs(sy-cy)<b.size/2+4;
+  });
   if(hit){
-    hit.alive = false; hit.hit = true;
-    hit.falling = true; hit.fallVy = -4; hit.fallAngle = 0;
-    sndHit();
-    spawnHit(cx, cy, hit.size);
+    const {sx,sy}=toScreen(hit.wx,hit.wy);
+    hit.alive=false; hit.falling=true;
+    hit.fallVy=-4; hit.fallAlpha=1; hit.fallAngle=0;
+    hit.fallSx=sx; hit.fallSy=sy;
+    sndHit(); spawnHit(cx,cy,hit.size);
   }
 }
 
 document.addEventListener('click', e=>{ if(e.target.closest('button,.btn')) return; fire(); });
-document.addEventListener('touchstart', e=>{ if(e.target.closest('button,.btn')) return; e.preventDefault(); fire(); }, {passive:false});
+document.addEventListener('touchstart', e=>{ if(e.target.closest('button,.btn')) return; e.preventDefault(); fire(); },{passive:false});
 
 // ── LOOP ───────────────────────────────────────────────────────────────────
 function loop(){
@@ -178,46 +201,41 @@ function loop(){
   drawBG();
   if(!running) return;
 
-  // spawn
-  const alive = boxes.filter(b=>b.alive).length;
-  if(alive < 3 && Math.random() < .02) spawnBox();
+  // maintain ~3 alive boxes
+  if(boxes.filter(b=>b.alive).length < 3 && Math.random()<.025) spawnBox();
 
-  // update & draw boxes
-  for(let i = boxes.length-1; i >= 0; i--){
-    const b = boxes[i];
+  for(let i=boxes.length-1; i>=0; i--){
+    const b=boxes[i];
 
     if(b.falling){
-      b.y += b.fallVy; b.fallVy += .55;
-      b.fallAngle += .1; b.fallAlpha = Math.max(0, b.fallAlpha-.02);
-      if(b.fallAlpha <= 0){ boxes.splice(i,1); continue; }
-      ctx.save();
-      ctx.globalAlpha = b.fallAlpha;
-      ctx.translate(b.x, b.y); ctx.rotate(b.fallAngle);
-      ctx.fillStyle = '#666';
-      ctx.fillRect(-b.size/2, -b.size/2, b.size, b.size);
-      ctx.strokeStyle='#888'; ctx.lineWidth=1.5;
-      ctx.strokeRect(-b.size/2, -b.size/2, b.size, b.size);
-      ctx.restore();
-      continue;
+      b.fallSy+=b.fallVy; b.fallVy+=.55;
+      b.fallAngle+=.1; b.fallAlpha=Math.max(0,b.fallAlpha-.022);
+      if(b.fallAlpha<=0){ boxes.splice(i,1); continue; }
+      ctx.save(); ctx.globalAlpha=b.fallAlpha;
+      ctx.translate(b.fallSx,b.fallSy); ctx.rotate(b.fallAngle);
+      ctx.fillStyle='#666'; ctx.fillRect(-b.size/2,-b.size/2,b.size,b.size);
+      ctx.strokeStyle='#888'; ctx.lineWidth=1.5; ctx.strokeRect(-b.size/2,-b.size/2,b.size,b.size);
+      ctx.restore(); continue;
     }
 
     if(!b.alive){ boxes.splice(i,1); continue; }
 
-    b.x += b.vx; b.y += b.vy;
-    b.vy += (Math.random()-.5)*.08;
-    if(b.y < 50)        b.vy =  Math.abs(b.vy);
-    if(b.y > H*.68)     b.vy = -Math.abs(b.vy);
-    if((b.goRight && b.x > W+80) || (!b.goRight && b.x < -80)){ boxes.splice(i,1); continue; }
+    // gentle world-space drift
+    b.wx+=b.vwx; b.wy+=b.vwy;
 
-    // highlight if under crosshair
-    const under = Math.abs(b.x-W/2) < b.size/2+4 && Math.abs(b.y-H/2) < b.size/2+4;
+    const {sx,sy}=toScreen(b.wx,b.wy);
+
+    // remove if way off screen
+    if(sx<-W||sx>W*2||sy<-H||sy>H*2){ boxes.splice(i,1); continue; }
+
+    const under=Math.abs(sx-W/2)<b.size/2+4 && Math.abs(sy-H/2)<b.size/2+4;
 
     ctx.save();
-    ctx.fillStyle = under ? '#888' : '#666';
-    ctx.fillRect(b.x-b.size/2, b.y-b.size/2, b.size, b.size);
+    ctx.fillStyle   = under ? '#888' : '#666';
     ctx.strokeStyle = under ? '#ccc' : '#888';
-    ctx.lineWidth = under ? 2 : 1.5;
-    ctx.strokeRect(b.x-b.size/2, b.y-b.size/2, b.size, b.size);
+    ctx.lineWidth   = under ? 2 : 1.5;
+    ctx.fillRect(sx-b.size/2, sy-b.size/2, b.size, b.size);
+    ctx.strokeRect(sx-b.size/2, sy-b.size/2, b.size, b.size);
     ctx.restore();
   }
 
@@ -229,23 +247,39 @@ loop();
 // idle bg
 (function idle(){ requestAnimationFrame(idle); if(running) return; ctx.clearRect(0,0,W,H); drawBG(); })();
 
-// ── BUTTONS ────────────────────────────────────────────────────────────────
+// ── CAMERA ─────────────────────────────────────────────────────────────────
 async function startCam(){
   try{
     const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-    const v=document.getElementById('bg-video'); v.srcObject=s; v.style.display='block'; useCam=true;
+    const v=document.getElementById('bg-video');
+    v.srcObject=s; v.style.display='block'; useCam=true;
   }catch(e){ useCam=false; }
 }
 
+async function requestOrientation(){
+  if(typeof DeviceOrientationEvent!=='undefined' &&
+     typeof DeviceOrientationEvent.requestPermission==='function'){
+    try{ await DeviceOrientationEvent.requestPermission(); }catch(e){}
+  }
+}
+
+function startGame(){
+  document.getElementById('start').style.display='none';
+  for(let i=0;i<4;i++) spawnBox();
+  // snapshot current orientation as "zero"
+  baseOrient = { beta: orient.beta, gamma: orient.gamma };
+  running=true;
+  const hasOrient = orient.gamma!==0||orient.beta!==0;
+  document.getElementById('hint').textContent = hasOrient
+    ? 'Move camera to aim  ·  Tap to shoot'
+    : 'Tap to shoot  (no gyro detected)';
+}
+
 document.getElementById('btn-cam').addEventListener('click', async ()=>{
-  AC.resume(); await startCam();
-  document.getElementById('start').style.display='none';
-  running=true;
+  AC.resume(); await requestOrientation(); await startCam(); startGame();
 });
-document.getElementById('btn-plain').addEventListener('click', ()=>{
-  AC.resume(); useCam=false;
-  document.getElementById('start').style.display='none';
-  running=true;
+document.getElementById('btn-plain').addEventListener('click', async ()=>{
+  AC.resume(); await requestOrientation(); useCam=false; startGame();
 });
 </script>
 </body>
