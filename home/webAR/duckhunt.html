@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Duck Hut - Prototype</title>
+<title>Prototype</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { background:#5a5a5a; overflow:hidden; width:100vw; height:100vh; touch-action:none; font-family:'Courier New',monospace; }
@@ -63,9 +63,11 @@ let running = false;
 // ── DEVICE ORIENTATION ────────────────────────────────────────────────────
 // Boxes live in "world space". As you rotate the device, the world offset
 // shifts, making boxes appear fixed in space while the crosshair stays center.
-let orient = { beta: 0, gamma: 0 };
-let baseOrient = null;
-const SENS = 5.5; // px shift per degree
+let orient      = { beta: 0, gamma: 0 };   // raw sensor
+let smoothOrient = { beta: 0, gamma: 0 };  // lerped
+let baseOrient   = null;
+const SENS  = 1.8;   // degrees -> world px (low = slow like Nokia)
+const LERP  = 0.06;  // smoothing 0-1 (low = more lag/glide)
 
 window.addEventListener('deviceorientation', e => {
   if (e.gamma === null) return;
@@ -73,14 +75,19 @@ window.addEventListener('deviceorientation', e => {
   orient.gamma = e.gamma || 0;
 }, true);
 
+function tickOrientation() {
+  // smooth toward raw value each frame
+  smoothOrient.beta  += (orient.beta  - smoothOrient.beta)  * LERP;
+  smoothOrient.gamma += (orient.gamma - smoothOrient.gamma) * LERP;
+}
+
 function worldOffset() {
   if (!baseOrient) return { ox:0, oy:0 };
-  const dG = orient.gamma - baseOrient.gamma;
-  const dB = orient.beta  - baseOrient.beta;
-  // clamp so boxes don't fly too far off in one direction
+  const dG = smoothOrient.gamma - baseOrient.gamma;
+  const dB = smoothOrient.beta  - baseOrient.beta;
   return {
-    ox: -Math.max(-W, Math.min(W, dG * SENS * (W/100))),
-    oy: -Math.max(-H, Math.min(H, dB * SENS * (H/100))),
+    ox: -(dG * SENS * (W / 100)),
+    oy: -(dB * SENS * (H / 100)),
   };
 }
 
@@ -201,6 +208,8 @@ function loop(){
   drawBG();
   if(!running) return;
 
+  tickOrientation();
+
   // maintain ~3 alive boxes
   if(boxes.filter(b=>b.alive).length < 3 && Math.random()<.025) spawnBox();
 
@@ -268,6 +277,8 @@ function startGame(){
   for(let i=0;i<4;i++) spawnBox();
   // snapshot current orientation as "zero"
   baseOrient = { beta: orient.beta, gamma: orient.gamma };
+  smoothOrient.beta  = orient.beta;
+  smoothOrient.gamma = orient.gamma;
   running=true;
   const hasOrient = orient.gamma!==0||orient.beta!==0;
   document.getElementById('hint').textContent = hasOrient
