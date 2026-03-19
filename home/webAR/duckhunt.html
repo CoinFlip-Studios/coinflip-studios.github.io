@@ -63,38 +63,43 @@ let running = false;
 // ── DEVICE ORIENTATION ────────────────────────────────────────────────────
 // Boxes live in "world space". As you rotate the device, the world offset
 // shifts, making boxes appear fixed in space while the crosshair stays center.
-let orient      = { beta: 0, gamma: 0 };   // raw sensor
-let smoothOrient = { beta: 0, gamma: 0 };  // lerped
-let baseOrient   = null;
-const SENS  = 1.8;   // degrees -> world px (low = slow like Nokia)
-const LERP  = 0.06;  // smoothing 0-1 (low = more lag/glide)
+// Instead of comparing absolute angles (which snap at ±90/±180 boundaries),
+// we accumulate tiny wrapped deltas each sensor event — no snapping possible.
+const SENS = 1.8;
+const LERP = 0.06;
 
-window.addEventListener('deviceorientation', e => {
-  if (e.gamma === null) return;
-  orient.beta  = e.beta  || 0;
-  orient.gamma = e.gamma || 0;
-}, true);
-
-function tickOrientation() {
-  // smooth toward raw value each frame
-  smoothOrient.beta  += (orient.beta  - smoothOrient.beta)  * LERP;
-  smoothOrient.gamma += (orient.gamma - smoothOrient.gamma) * LERP;
-}
+let prevRaw = null;                    // last raw sensor reading
+let cumRaw  = { x: 0, y: 0 };        // total accumulated raw rotation
+let cumSmooth = { x: 0, y: 0 };      // lerped version used for rendering
 
 function wrapDelta(d, range) {
-  // prevent jumps when angle wraps around ±range (e.g. gamma ±180)
-  while (d >  range/2) d -= range;
-  while (d < -range/2) d += range;
+  while (d >  range / 2) d -= range;
+  while (d < -range / 2) d += range;
   return d;
 }
 
+window.addEventListener('deviceorientation', e => {
+  if (e.gamma === null) return;
+  const g = e.gamma || 0;
+  const b = e.beta  || 0;
+  if (prevRaw) {
+    // gamma range is -90..90  → wrap over 180
+    // beta  range is -180..180 → wrap over 360
+    cumRaw.x += wrapDelta(g - prevRaw.g, 180);
+    cumRaw.y += wrapDelta(b - prevRaw.b, 360);
+  }
+  prevRaw = { g, b };
+}, true);
+
+function tickOrientation() {
+  cumSmooth.x += (cumRaw.x - cumSmooth.x) * LERP;
+  cumSmooth.y += (cumRaw.y - cumSmooth.y) * LERP;
+}
+
 function worldOffset() {
-  if (!baseOrient) return { ox:0, oy:0 };
-  const dG = wrapDelta(smoothOrient.gamma - baseOrient.gamma, 360);
-  const dB = wrapDelta(smoothOrient.beta  - baseOrient.beta,  360);
   return {
-    ox: -(dG * SENS * (W / 100)),
-    oy:  (dB * SENS * (H / 100)),  // flipped: look up = world moves up
+    ox:  cumSmooth.x * SENS * (W / 100),   // pan right → boxes go right (reverted)
+    oy:  cumSmooth.y * SENS * (H / 100),   // look up   → boxes go up
   };
 }
 
@@ -283,9 +288,10 @@ function startGame(){
   document.getElementById('start').style.display='none';
   for(let i=0;i<4;i++) spawnBox();
   // snapshot current orientation as "zero"
-  baseOrient = { beta: orient.beta, gamma: orient.gamma };
-  smoothOrient.beta  = orient.beta;
-  smoothOrient.gamma = orient.gamma;
+  // reset accumulators so current position is "zero"
+  cumRaw.x = 0; cumRaw.y = 0;
+  cumSmooth.x = 0; cumSmooth.y = 0;
+  prevRaw = null;
   running=true;
   const hasOrient = orient.gamma!==0||orient.beta!==0;
   document.getElementById('hint').textContent = hasOrient
