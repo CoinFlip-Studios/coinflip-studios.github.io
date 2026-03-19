@@ -81,13 +81,20 @@ function tickOrientation() {
   smoothOrient.gamma += (orient.gamma - smoothOrient.gamma) * LERP;
 }
 
+function wrapDelta(d, range) {
+  // prevent jumps when angle wraps around ±range (e.g. gamma ±180)
+  while (d >  range/2) d -= range;
+  while (d < -range/2) d += range;
+  return d;
+}
+
 function worldOffset() {
   if (!baseOrient) return { ox:0, oy:0 };
-  const dG = smoothOrient.gamma - baseOrient.gamma;
-  const dB = smoothOrient.beta  - baseOrient.beta;
+  const dG = wrapDelta(smoothOrient.gamma - baseOrient.gamma, 360);
+  const dB = wrapDelta(smoothOrient.beta  - baseOrient.beta,  360);
   return {
     ox: -(dG * SENS * (W / 100)),
-    oy: -(dB * SENS * (H / 100)),
+    oy:  (dB * SENS * (H / 100)),  // flipped: look up = world moves up
   };
 }
 
