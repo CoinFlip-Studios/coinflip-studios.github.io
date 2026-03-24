@@ -7,7 +7,7 @@
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { background:#5a5a5a; overflow:hidden; width:100vw; height:100vh; touch-action:none; font-family:'Courier New',monospace; }
-  #bg-video { position:fixed; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; display:none; }
+  #bg-video { position:fixed; inset:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1); z-index:0; display:none; }
   #c { position:fixed; inset:0; z-index:10; width:100%; height:100%; }
 
   .screen {
@@ -300,10 +300,23 @@ loop();
 // ── CAMERA ─────────────────────────────────────────────────────────────────
 async function startCam(){
   try{
-    const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}});
-    const v=document.getElementById('bg-video');
-    v.srcObject=s; v.style.display='block'; useCam=true;
-  }catch(e){ useCam=false; }
+    // try back camera first (best for AR), fall back to any camera
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+    } catch(e) {
+      stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    }
+    const v = document.getElementById('bg-video');
+    v.srcObject = stream;
+    v.style.display = 'block';
+    useCam = true;
+  } catch(e) {
+    console.warn('Camera failed:', e);
+    useCam = false;
+  }
 }
 
 async function requestOrientation(){
