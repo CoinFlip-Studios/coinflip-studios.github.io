@@ -7,7 +7,7 @@
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { background:#5a5a5a; overflow:hidden; width:100vw; height:100vh; touch-action:none; font-family:'Courier New',monospace; }
-  #bg-video { position:fixed; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; display:none; }
+  #bg-video { position:fixed; inset:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1); z-index:0; display:none; }
   #c { position:fixed; inset:0; z-index:10; width:100%; height:100%; }
 
   .screen {
@@ -103,7 +103,7 @@ function tickOrientation() {
 
 function worldOffset() {
   return {
-    ox: -cumSmooth.x * SENS * (W / 100),   // pan right → boxes shift left (world stays fixed)
+    ox:  cumSmooth.x * SENS * (W / 100),   // front cam mirrored: flip X to match
     oy: -cumSmooth.y * SENS * (H / 100),   // look up   → boxes shift up
   };
 }
