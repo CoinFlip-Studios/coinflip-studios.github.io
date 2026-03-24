@@ -69,8 +69,8 @@ function sndHit(){
 // When you tilt UP → beta decreases → boxes should shift UP on screen (duck goes up).
 // When you pan RIGHT (back cam) → gamma increases → boxes shift RIGHT.
 
-const SENS = 3.5;   // degrees → screen% multiplier
-const LERP = 0.1;   // smoothing per frame
+const SENS = 3.0;   // degrees → screen% multiplier
+const LERP = 0.12;  // smoothing per frame
 
 let rawG = 0, rawB = 0;        // live gamma/beta from sensor
 let smG  = 0, smB  = 0;        // smoothed
@@ -111,15 +111,15 @@ function toScreen(wx, wy){
 }
 
 function spawnBox(){
-  // Spawn at left or right screen edge, random height
+  // Spawn at screen edge in WORLD space — no gyro offset baked in.
+  // wx/wy are offsets from the world origin (screen center at calibration).
   const goRight = Math.random() > .5;
-  const {ox, oy} = worldOffset();
-  const startWx = goRight ? (-W/2 - 60 - ox) : (W/2 + 60 - ox);
-  const startWy = (Math.random() - .5) * H * .6 - oy;
+  const startWx = goRight ? -W * 0.7 : W * 0.7;     // off screen edge in world space
+  const startWy = (Math.random() - .5) * H * 0.55;  // random vertical band
 
-  const speed   = .6 + Math.random() * .5;
-  const vwy_init = -.12 - Math.random() * .15;
-  const gravity  = .003 + Math.random() * .002;
+  const speed    = 0.35 + Math.random() * 0.25;      // slow horizontal drift
+  const vwy_init = -0.08 - Math.random() * 0.08;     // very gentle upward arc
+  const gravity  = 0.002 + Math.random() * 0.001;    // very soft gravity
 
   boxes.push({
     wx: startWx, wy: startWy,
@@ -127,9 +127,8 @@ function spawnBox(){
     vwy: vwy_init,
     gravity,
     goRight,
-    size: 54 + Math.random() * 22,
+    size: 60 + Math.random() * 20,                   // slightly bigger = easier to hit
     alive: true,
-    // falling state
     falling: false, fsx: 0, fsy: 0, fvy: 0, fang: 0, falpha: 1,
   });
 }
@@ -224,7 +223,7 @@ function loop(){
   // spawn up to 3 boxes, one every 2.2s
   const aliveCount = boxes.filter(b=>b.alive).length;
   const now = Date.now();
-  if(aliveCount < 3 && now - lastSpawn > 2200){ lastSpawn=now; spawnBox(); }
+  if(aliveCount < 3 && now - lastSpawn > 2800){ lastSpawn=now; spawnBox(); }
 
   // update & draw boxes
   for(let i=boxes.length-1;i>=0;i--){
@@ -251,8 +250,8 @@ function loop(){
 
     const {sx,sy} = toScreen(b.wx,b.wy);
 
-    // cull when past opposite edge or fallen below screen
-    if( (b.goRight && sx > W+80) || (!b.goRight && sx < -80) || sy > H+120 ){
+    // cull when world position has crossed far past the opposite side
+    if( (b.goRight && b.wx > W*0.8) || (!b.goRight && b.wx < -W*0.8) || b.wy > H*0.8 ){
       boxes.splice(i,1); continue;
     }
 
