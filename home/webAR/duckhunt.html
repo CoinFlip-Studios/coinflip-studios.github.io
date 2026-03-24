@@ -7,7 +7,7 @@
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { background:#5a5a5a; overflow:hidden; width:100vw; height:100vh; touch-action:none; font-family:'Courier New',monospace; }
-  #bg-video { position:fixed; inset:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1); z-index:0; display:none; }
+  #bg-video { position:fixed; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; display:none; }
   #c { position:fixed; inset:0; z-index:10; width:100%; height:100%; }
 
   .screen {
@@ -84,10 +84,14 @@ window.addEventListener('deviceorientation', e => {
   const g = e.gamma || 0;
   const b = e.beta  || 0;
   if (prevRaw) {
-    // gamma range is -90..90  → wrap over 180
-    // beta  range is -180..180 → wrap over 360
-    cumRaw.x += wrapDelta(g - prevRaw.g, 180);
-    cumRaw.y += wrapDelta(b - prevRaw.b, 360);
+    // wrap deltas to handle angle boundary crossings
+    let dx = wrapDelta(g - prevRaw.g, 180);
+    let dy = wrapDelta(b - prevRaw.b, 360);
+    // clamp each per-frame delta — kills sensor glitch snaps
+    dx = Math.max(-5, Math.min(5, dx));
+    dy = Math.max(-5, Math.min(5, dy));
+    cumRaw.x += dx;
+    cumRaw.y += dy;
   }
   prevRaw = { g, b };
 }, true);
@@ -99,8 +103,8 @@ function tickOrientation() {
 
 function worldOffset() {
   return {
-    ox:  cumSmooth.x * SENS * (W / 100),   // pan right → boxes go right (reverted)
-    oy:  cumSmooth.y * SENS * (H / 100),   // look up   → boxes go up
+    ox: -cumSmooth.x * SENS * (W / 100),   // pan right → boxes shift left (world stays fixed)
+    oy: -cumSmooth.y * SENS * (H / 100),   // look up   → boxes shift up
   };
 }
 
