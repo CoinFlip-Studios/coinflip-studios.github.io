@@ -59,6 +59,7 @@ window.addEventListener('resize', resize);
 
 let useCam = false;
 let running = false;
+let G_round = 1;
 
 // ── DEVICE ORIENTATION ────────────────────────────────────────────────────
 // Boxes live in "world space". As you rotate the device, the world offset
@@ -124,16 +125,30 @@ function sndHit(){
 let boxes = [];
 
 function spawnBox(){
-  const spread = 1.3;
+  // Spawn at left or right screen edge, random Y (0-1 of screen height)
+  const goRight = Math.random() > 0.5;
+  const {ox, oy} = worldOffset();
+
+  // Convert screen edge to world space
+  const edgeX  = goRight ? (-W/2 - ox) : (W/2 - ox);
+  const startY  = Math.random();                        // 0-1
+  const startWy = (startY - 0.5) * H - oy;            // world Y
+
+  const speed  = 1.8 + Math.random() * 1.2;
+  const vwx    = goRight ? speed : -speed;
+
+  // Arc: slight upward push, gravity will pull it into a curve
+  const vwy    = -0.4 - Math.random() * 0.6;           // starts going slightly up
+  const gravity = 0.018 + Math.random() * 0.012;       // arc strength
+
   boxes.push({
-    wx: (Math.random() - 0.5) * W * spread,
-    wy: (Math.random() - 0.5) * H * 0.6,
-    vwx: (Math.random() - 0.5) * 0.3,  // slow world-space drift
-    vwy: (Math.random() - 0.5) * 0.15,
+    wx: edgeX, wy: startWy,
+    vwx, vwy, gravity,
     size: 52 + Math.random() * 26,
     alive: true,
     falling: false, fallVy: 0, fallAngle: 0, fallAlpha: 1,
-    fallSx: 0, fallSy: 0, // screen pos when hit
+    fallSx: 0, fallSy: 0,
+    goRight,
   });
 }
 
@@ -222,8 +237,14 @@ function loop(){
 
   tickOrientation();
 
-  // maintain ~3 alive boxes
-  if(boxes.filter(b=>b.alive).length < 3 && Math.random()<.025) spawnBox();
+  // spawn a new box every ~2.5s, max 3 on screen at once
+  if(boxes.filter(b=>b.alive).length < 3) {
+    const now = Date.now();
+    if(!loop.lastSpawn || now - loop.lastSpawn > 2500 - G_round*120) {
+      loop.lastSpawn = now;
+      spawnBox();
+    }
+  }
 
   for(let i=boxes.length-1; i>=0; i--){
     const b=boxes[i];
@@ -241,13 +262,17 @@ function loop(){
 
     if(!b.alive){ boxes.splice(i,1); continue; }
 
-    // gentle world-space drift
-    b.wx+=b.vwx; b.wy+=b.vwy;
+    // arc movement: constant horizontal, gravity on vertical
+    b.wx  += b.vwx;
+    b.wy  += b.vwy;
+    b.vwy += b.gravity;   // gravity curves it downward
 
     const {sx,sy}=toScreen(b.wx,b.wy);
 
-    // remove if way off screen
-    if(sx<-W||sx>W*2||sy<-H||sy>H*2){ boxes.splice(i,1); continue; }
+    // remove once past the opposite screen edge or fallen way below
+    if((b.goRight && sx > W + b.size) || (!b.goRight && sx < -b.size) || sy > H + 100){
+      boxes.splice(i,1); continue;
+    }
 
     const under=Math.abs(sx-W/2)<b.size/2+4 && Math.abs(sy-H/2)<b.size/2+4;
 
@@ -286,7 +311,10 @@ async function requestOrientation(){
 
 function startGame(){
   document.getElementById('start').style.display='none';
-  for(let i=0;i<4;i++) spawnBox();
+  // stagger first spawns
+  spawnBox();
+  setTimeout(spawnBox, 1000);
+  setTimeout(spawnBox, 2000);
   // snapshot current orientation as "zero"
   // reset accumulators so current position is "zero"
   cumRaw.x = 0; cumRaw.y = 0;
