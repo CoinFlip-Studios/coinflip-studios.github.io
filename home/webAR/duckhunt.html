@@ -333,10 +333,11 @@ function startGame(){
   setTimeout(spawnBox, 1000);
   setTimeout(spawnBox, 2000);
   // snapshot current orientation as "zero"
-  // reset accumulators so current position is "zero"
-  cumRaw.x = 0; cumRaw.y = 0;
-  cumSmooth.x = 0; cumSmooth.y = 0;
-  prevRaw = null;
+  // snapshot current angle as calibration zero
+  baseGamma   = rawGamma;
+  baseBeta    = rawBeta;
+  smoothGamma = rawGamma;
+  smoothBeta  = rawBeta;
   running=true;
   const hasOrient = orient.gamma!==0||orient.beta!==0;
   document.getElementById('hint').textContent = hasOrient
