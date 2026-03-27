@@ -70,9 +70,9 @@ function sndHit(){
 // We track DELTA from calibration zero, wrapped to avoid boundary snaps.
 // Then lerp that delta smoothly — never lerp absolute angles.
 
-const SENS_X = 4.0;   // horizontal feel
-const SENS_Y = 3.5;   // vertical feel
-const LERP   = 0.08;  // lower = smoother/laggier, higher = snappier
+const SENS_X = 1.8;   // horizontal — gentle, 1° = ~1.8% screen width
+const SENS_Y = 1.8;   // vertical
+const LERP   = 0.15;  // responsive but smooth
 
 let rawG = 0, rawB = 0;
 let baseG = 0, baseB = 0;
@@ -112,8 +112,8 @@ let boxes    = [];
 let lastSpawn = 0;
 
 function toScreen(wx, wy){
-  // Pinned to screen for gyro testing — no world offset applied
-  return { sx: W/2 + wx, sy: H/2 + wy };
+  const {ox, oy} = worldOffset();
+  return { sx: W/2 + wx + ox, sy: H/2 + wy + oy };
 }
 
 function spawnGrid(){
