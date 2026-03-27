@@ -39,14 +39,19 @@ window.addEventListener('resize', resize);
 })();
 
 // iOS needs a USER GESTURE to grant DeviceOrientation permission
-document.getElementById('tap').addEventListener('click', async () => {
+async function handleStart() {
   if (typeof DeviceOrientationEvent !== 'undefined' &&
       typeof DeviceOrientationEvent.requestPermission === 'function') {
     try { await DeviceOrientationEvent.requestPermission(); } catch(e){}
   }
   AC.resume();
-  document.getElementById('tap').style.display = 'none';
-}, { once: true });
+  const tap = document.getElementById('tap');
+  tap.removeEventListener('touchend', handleStart);
+  tap.removeEventListener('click', handleStart);
+  tap.style.display = 'none';
+}
+document.getElementById('tap').addEventListener('touchend', handleStart);
+document.getElementById('tap').addEventListener('click', handleStart);
 
 // ── AUDIO ────────────────────────────────────────────────────────────────
 const AC = new (window.AudioContext || window.webkitAudioContext)();
