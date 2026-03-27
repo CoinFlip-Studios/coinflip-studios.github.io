@@ -62,13 +62,22 @@ function sndHit(){
 // ── GYRO ──────────────────────────────────────────────────────────────────
 // KEY FIX: we track the WRAPPED DELTA from base each frame, then lerp that
 // delta — never lerp absolute angles (which snaps at ±90/±180 boundaries).
-const SENS = 3.0;
-const LERP = 0.10;
+// ── GYRO ─────────────────────────────────────────────────────────────────
+// Portrait phone held upright:
+//   gamma = left/right tilt  (-90 to +90)  → controls X pan
+//   beta  = forward/back tilt (0 to ±180)  → controls Y pan
+//
+// We track DELTA from calibration zero, wrapped to avoid boundary snaps.
+// Then lerp that delta smoothly — never lerp absolute angles.
 
-let rawG = 0, rawB = 0;       // latest raw sensor values
-let baseG = 0, baseB = 0;     // calibrated zero
-let targetDG = 0, targetDB = 0; // wrapped delta from base (target)
-let smoothDG = 0, smoothDB = 0; // lerped delta (what we actually use)
+const SENS_X = 4.0;   // horizontal feel
+const SENS_Y = 3.5;   // vertical feel
+const LERP   = 0.08;  // lower = smoother/laggier, higher = snappier
+
+let rawG = 0, rawB = 0;
+let baseG = 0, baseB = 0;
+let targetDG = 0, targetDB = 0;
+let smoothDG = 0, smoothDB = 0;
 let gyroReady = false;
 
 function wrap(d, r){ while(d > r/2) d -= r; while(d < -r/2) d += r; return d; }
@@ -78,26 +87,23 @@ window.addEventListener('deviceorientation', e => {
   rawG = e.gamma || 0;
   rawB = e.beta  || 0;
   if (!gyroReady) {
-    // first reading — set base
     baseG = rawG; baseB = rawB;
-    smoothDG = 0; smoothDB = 0;
     gyroReady = true;
   }
-  // always compute wrapped delta from base as the TARGET
+  // wrapped delta from calibrated base
   targetDG = wrap(rawG - baseG, 180);
   targetDB = wrap(rawB - baseB, 360);
 }, true);
 
 function tickGyro(){
-  // lerp smooth delta toward target delta — no angle wrap issues possible
   smoothDG += (targetDG - smoothDG) * LERP;
   smoothDB += (targetDB - smoothDB) * LERP;
 }
 
 function worldOffset(){
   return {
-    ox: -smoothDG * SENS * (W / 100),
-    oy: -smoothDB * SENS * (H / 100),
+    ox: -smoothDG * SENS_X * (W / 100),
+    oy: -smoothDB * SENS_Y * (H / 100),
   };
 }
 
@@ -114,14 +120,9 @@ function spawnBox(){
   const goRight  = Math.random() > .5;
   const startWx  = goRight ? -W * 0.65 : W * 0.65;
   const startWy  = (Math.random() - .5) * H * 0.5;
-  const speed    = 0.35 + Math.random() * 0.2;
-  const vwy_init = -0.06 - Math.random() * 0.06;
-  const gravity  = 0.0015 + Math.random() * 0.001;
-
   boxes.push({
     wx: startWx, wy: startWy,
-    vwx: goRight ? speed : -speed,
-    vwy: vwy_init, gravity, goRight,
+    vwx: 0, vwy: 0, gravity: 0, goRight,
     size: 62 + Math.random() * 18,
     alive: true,
     falling:false, fsx:0, fsy:0, fvy:0, fang:0, falpha:1,
@@ -231,10 +232,7 @@ function loop(){
     b.wy  += b.vwy;
     b.vwy += b.gravity;
 
-    // cull by world position — not screen position (avoids gyro-pan culling)
-    if((b.goRight && b.wx > W*0.75) || (!b.goRight && b.wx < -W*0.75) || b.wy > H*0.8){
-      boxes.splice(i,1); continue;
-    }
+    // no culling while movement is paused
 
     const {sx, sy} = toScreen(b.wx, b.wy);
     const under = Math.abs(sx-W/2) < b.size/2+8 && Math.abs(sy-H/2) < b.size/2+8;
