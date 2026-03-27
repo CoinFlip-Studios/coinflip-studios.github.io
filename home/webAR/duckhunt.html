@@ -98,9 +98,17 @@ window.addEventListener('deviceorientation', e => {
   targetDB = wrap(rawB - baseB, 360);
 }, true);
 
+const DEADZONE = 1.2; // degrees — ignore jitter below this threshold
+
 function tickGyro(){
-  smoothDG += (targetDG - smoothDG) * LERP;
-  smoothDB += (targetDB - smoothDB) * LERP;
+  // Apply deadzone — if delta is tiny, treat as zero to stop drift
+  const dg = Math.abs(targetDG) < DEADZONE ? 0 : targetDG;
+  const db = Math.abs(targetDB) < DEADZONE ? 0 : targetDB;
+  smoothDG += (dg - smoothDG) * LERP;
+  smoothDB += (db - smoothDB) * LERP;
+  // Snap to zero when close enough — prevents endless micro-drift
+  if (Math.abs(smoothDG) < 0.05) smoothDG = 0;
+  if (Math.abs(smoothDB) < 0.05) smoothDB = 0;
 }
 
 function worldOffset(){
