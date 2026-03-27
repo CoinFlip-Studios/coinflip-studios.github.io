@@ -116,17 +116,20 @@ function toScreen(wx, wy){
   return { sx: W/2 + wx + ox, sy: H/2 + wy + oy };
 }
 
-function spawnBox(){
-  const goRight  = Math.random() > .5;
-  const startWx  = goRight ? -W * 0.65 : W * 0.65;
-  const startWy  = (Math.random() - .5) * H * 0.5;
-  boxes.push({
-    wx: startWx, wy: startWy,
-    vwx: 0, vwy: 0, gravity: 0, goRight,
-    size: 62 + Math.random() * 18,
-    alive: true,
-    falling:false, fsx:0, fsy:0, fvy:0, fang:0, falpha:1,
-  });
+function spawnGrid(){
+  boxes = [];
+  const spacingX = W * 0.55;
+  const spacingY = H * 0.45;
+  for (let row = -1; row <= 1; row++) {
+    for (let col = -1; col <= 1; col++) {
+      boxes.push({
+        wx: col * spacingX, wy: row * spacingY,
+        vwx: 0, vwy: 0, gravity: 0, goRight: true,
+        size: 64, alive: true,
+        falling:false, fsx:0, fsy:0, fvy:0, fang:0, falpha:1,
+      });
+    }
+  }
 }
 
 // ── CROSSHAIR ─────────────────────────────────────────────────────────────
