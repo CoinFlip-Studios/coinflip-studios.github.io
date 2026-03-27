@@ -112,8 +112,8 @@ let boxes    = [];
 let lastSpawn = 0;
 
 function toScreen(wx, wy){
-  const {ox, oy} = worldOffset();
-  return { sx: W/2 + wx + ox, sy: H/2 + wy + oy };
+  // Pinned to screen for gyro testing — no world offset applied
+  return { sx: W/2 + wx, sy: H/2 + wy };
 }
 
 function spawnGrid(){
@@ -247,6 +247,7 @@ function loop(){
   drawParticles();
   drawCrosshair();
 }
+spawnGrid();
 loop();
 </script>
 </body>
