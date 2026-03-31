@@ -25,7 +25,6 @@
   <style>
     body{margin:0;overflow:hidden;font-family:'Helvetica Neue',Arial,sans-serif}
     
-    /* Message overlays */
     .message-overlay{
       position:fixed;
       top:0;left:0;right:0;bottom:0;
@@ -70,7 +69,6 @@
       50%{transform:scale(1.1);opacity:0.7}
     }
     
-    /* Game HUD */
     #game-hud{
       position:fixed;
       top:0;left:0;right:0;
@@ -107,7 +105,6 @@
       50%{transform:scale(1.05)}
     }
     
-    /* Game Over screen */
     #game-over{
       position:fixed;
       top:0;left:0;right:0;bottom:0;
@@ -152,12 +149,10 @@
     #play-again:hover{background:#ff8533;transform:scale(1.05)}
     #play-again:active{transform:scale(0.98)}
     
-    /* Swipe zone */
     #swipe-zone{position:fixed;top:0;left:0;width:100%;height:100%;z-index:100;touch-action:none}
     .swipe-trail{position:fixed;z-index:99;pointer-events:none;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle,rgba(255,100,0,0.7),transparent);animation:trailFade .4s ease forwards}
     @keyframes trailFade{0%{opacity:.8;transform:scale(1)}100%{opacity:0;transform:scale(.2)}}
     
-    /* Countdown overlay */
     #countdown{
       position:fixed;
       top:0;left:0;right:0;bottom:0;
@@ -182,11 +177,32 @@
       50%{transform:scale(1.2)}
       100%{transform:scale(1);opacity:1}
     }
+    
+    #score-popup{
+      position:fixed;
+      top:50%;
+      left:50%;
+      transform:translate(-50%,-50%);
+      font-size:60px;
+      font-weight:700;
+      color:#4CAF50;
+      text-shadow:0 4px 20px rgba(0,0,0,0.5);
+      opacity:0;
+      z-index:9997;
+      pointer-events:none;
+    }
+    #score-popup.show{
+      animation:scorePopup 0.8s ease forwards;
+    }
+    @keyframes scorePopup{
+      0%{opacity:0;transform:translate(-50%,-50%) scale(0.5)}
+      30%{opacity:1;transform:translate(-50%,-50%) scale(1.2)}
+      100%{opacity:0;transform:translate(-50%,-80%) scale(1)}
+    }
   </style>
 </head>
 <body>
 
-<!-- Scan Logo Message -->
 <div id="scan-message" class="message-overlay visible">
   <div class="message-box">
     <svg class="scan-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -205,7 +221,6 @@
   </div>
 </div>
 
-<!-- Ready Message -->
 <div id="ready-message" class="message-overlay hidden">
   <div class="message-box">
     <h1>🏀 Get Ready!</h1>
@@ -213,16 +228,15 @@
   </div>
 </div>
 
-<!-- Countdown -->
 <div id="countdown"></div>
 
-<!-- Game HUD -->
 <div id="game-hud">
   <div id="score-display">Score: 0</div>
   <div id="timer-display">0:30</div>
 </div>
 
-<!-- Game Over -->
+<div id="score-popup">+1</div>
+
 <div id="game-over">
   <h1>Time's Up!</h1>
   <p class="final-score" id="final-score">0</p>
@@ -265,14 +279,18 @@
 <script>
 var sceneEl = document.querySelector('a-scene');
 sceneEl.addEventListener('loaded', function() {
-  // Game state
   var GAME_DURATION = 30;
-  var gameState = 'scanning'; // scanning, ready, countdown, playing, ended
+  var gameState = 'scanning';
   var score = 0;
   var timeRemaining = GAME_DURATION;
   var gameTimer = null;
+  var gameStartTime = 0;
   
-  // Physics constants
+  // Hoop movement settings for last 10 seconds
+  var HOOP_MOVE_AMPLITUDE = 0.5; // How far left/right the hoop moves
+  var HOOP_MOVE_SPEED = 2.5; // How fast it oscillates
+  var hoopOffset = new THREE.Vector3(0, 0, 0);
+  
   var GRAVITY = -9.8, BALL_R = 0.16, FRICTION = 0.25;
   var NET_RINGS = [
     {id:'net0',oy:0,oz:0.10,or:0.29},
@@ -285,6 +303,7 @@ sceneEl.addEventListener('loaded', function() {
   var netState = NET_RINGS.map(function(r) {
     return {el:null,id:r.id,oy:r.oy,oz:r.oz,or:r.or,offsetX:0,offsetY:0,velX:0,velY:0};
   });
+  
   var C = {
     rim: {cx:0,cy:0,cz:0.05,majorR:0.32,tubeR:0.028,bounce:0.55},
     backboard: {cx:0,cy:0,cz:-0.5,hw:0.75,hh:0.55,hd:0.04,bounce:0.45}
@@ -292,14 +311,17 @@ sceneEl.addEventListener('loaded', function() {
 
   var markerVisible = false, hoopInitialized = false, balls = [], swipeStart = null;
   var hoopWorldMatrix = new THREE.Matrix4(), hoopWorldMatrixInverse = new THREE.Matrix4();
+  var baseHoopPosition = new THREE.Vector3();
+  var baseHoopQuaternion = new THREE.Quaternion();
+  var baseHoopScale = new THREE.Vector3(1, 1, 1);
 
-  // UI Elements
   var scanMessage = document.getElementById('scan-message');
   var readyMessage = document.getElementById('ready-message');
   var countdownEl = document.getElementById('countdown');
   var gameHud = document.getElementById('game-hud');
   var scoreDisplay = document.getElementById('score-display');
   var timerDisplay = document.getElementById('timer-display');
+  var scorePopup = document.getElementById('score-popup');
   var gameOverScreen = document.getElementById('game-over');
   var finalScoreEl = document.getElementById('final-score');
   var playAgainBtn = document.getElementById('play-again');
@@ -311,7 +333,6 @@ sceneEl.addEventListener('loaded', function() {
 
   netState.forEach(function(ns) { ns.el = document.getElementById(ns.id); });
 
-  // Game flow functions
   function showScanMessage() {
     scanMessage.classList.remove('hidden');
     scanMessage.classList.add('visible');
@@ -326,7 +347,6 @@ sceneEl.addEventListener('loaded', function() {
     readyMessage.classList.remove('hidden');
     setTimeout(function() { readyMessage.classList.add('visible'); }, 50);
     
-    // Show ready message for 2 seconds, then start countdown
     setTimeout(function() {
       readyMessage.classList.remove('visible');
       setTimeout(function() { readyMessage.classList.add('hidden'); }, 500);
@@ -361,16 +381,15 @@ sceneEl.addEventListener('loaded', function() {
     gameState = 'playing';
     score = 0;
     timeRemaining = GAME_DURATION;
+    gameStartTime = performance.now();
+    hoopOffset.set(0, 0, 0);
     
-    // Show HUD
     gameHud.classList.add('visible');
     updateScoreDisplay();
     updateTimerDisplay();
     
-    // Show hoop
     hoopContainer.setAttribute('visible', 'true');
     
-    // Start timer
     gameTimer = setInterval(function() {
       timeRemaining--;
       updateTimerDisplay();
@@ -395,15 +414,19 @@ sceneEl.addEventListener('loaded', function() {
     timerDisplay.textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
   }
   
+  function showScorePopup() {
+    scorePopup.classList.remove('show');
+    void scorePopup.offsetWidth;
+    scorePopup.classList.add('show');
+  }
+  
   function endGame() {
     gameState = 'ended';
     clearInterval(gameTimer);
     
-    // Hide HUD
     gameHud.classList.remove('visible');
     timerDisplay.classList.remove('warning');
     
-    // Show game over
     finalScoreEl.textContent = score;
     gameOverScreen.classList.add('visible');
     
@@ -414,27 +437,22 @@ sceneEl.addEventListener('loaded', function() {
     gameState = 'scanning';
     score = 0;
     timeRemaining = GAME_DURATION;
+    hoopOffset.set(0, 0, 0);
     
-    // Clear balls
     balls.forEach(function(b) {
       if (b.el && b.el.parentNode) b.el.parentNode.removeChild(b.el);
     });
     balls = [];
     
-    // Hide game over
     gameOverScreen.classList.remove('visible');
-    
-    // Hide hoop until marker found again
     hoopContainer.setAttribute('visible', 'false');
     hoopInitialized = false;
     
-    // Show scan message
     showScanMessage();
   }
   
   playAgainBtn.addEventListener('click', resetGame);
 
-  // Marker events
   markerEl.addEventListener('markerFound', function() {
     markerVisible = true;
     hoopInitialized = true;
@@ -442,7 +460,7 @@ sceneEl.addEventListener('loaded', function() {
     if (gameState === 'scanning') {
       gameState = 'ready';
       showReadyMessage();
-    } else if (gameState === 'playing') {
+    } else if (gameState === 'playing' || gameState === 'countdown') {
       hoopContainer.setAttribute('visible', 'true');
     }
   });
@@ -451,7 +469,6 @@ sceneEl.addEventListener('loaded', function() {
     markerVisible = false;
   });
 
-  // Touch/swipe handling
   function getXY(e) {
     if (e.touches && e.touches[0]) return {x: e.touches[0].clientX, y: e.touches[0].clientY};
     if (e.changedTouches && e.changedTouches[0]) return {x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY};
@@ -519,11 +536,11 @@ sceneEl.addEventListener('loaded', function() {
     var cr = new THREE.Vector3();
     cr.crossVectors(cd, new THREE.Vector3(0, 1, 0)).normalize();
     tp.add(cr.clone().multiplyScalar(hBias * 1.2));
-    var acc = 0.7 + power * 0.3;
+    var acc = 0.8 + power * 0.2;
     tp.add(new THREE.Vector3(
-      (Math.random() - 0.5) * (1 - acc) * 0.8,
-      (Math.random() - 0.5) * (1 - acc) * 0.4,
-      (Math.random() - 0.5) * (1 - acc) * 0.8
+      (Math.random() - 0.5) * (1 - acc) * 0.5,
+      (Math.random() - 0.5) * (1 - acc) * 0.3,
+      (Math.random() - 0.5) * (1 - acc) * 0.5
     ));
     var d = tp.clone().sub(sp);
     var hDist = Math.sqrt(d.x * d.x + d.z * d.z);
@@ -651,7 +668,7 @@ sceneEl.addEventListener('loaded', function() {
       var ring = NET_RINGS[i];
       var dxR = lp.x - C.rim.cx, dyR = lp.y - C.rim.cy;
       var distFromCenter = Math.sqrt(dxR * dxR + dyR * dyR);
-      if (distFromCenter < ring.or + BALL_R * 0.5 && lp.z > ring.oz - BALL_R && lp.z < ring.oz + BALL_R * 2 && lv.z > 0) {
+      if (distFromCenter < ring.or + BALL_R * 0.8 && lp.z > ring.oz - BALL_R * 1.5 && lp.z < ring.oz + BALL_R * 2.5 && lv.z > 0) {
         b.passedNetRings.add(i);
         pushNetRing(i, lp, lv);
         lv.x *= 0.92;
@@ -660,10 +677,11 @@ sceneEl.addEventListener('loaded', function() {
         b.inNet = true;
       }
     }
-    if (!b.scored && b.passedNetRings.size >= 3 && lv.z > 0) {
+    if (!b.scored && b.passedNetRings.size >= 2 && lv.z > 0) {
       b.scored = true;
       score++;
       updateScoreDisplay();
+      showScorePopup();
       if (navigator.vibrate) navigator.vibrate([50, 30, 80]);
     }
   }
@@ -672,18 +690,44 @@ sceneEl.addEventListener('loaded', function() {
   function loop(now) {
     var dt = Math.min((now - lt) / 1000, 0.05);
     lt = now;
+    
+    // Update base hoop position from marker when visible
     if (markerVisible) {
       var markerObj = markerEl.object3D;
       markerObj.updateMatrixWorld(true);
-      hoopPivot.object3D.updateMatrixWorld(true);
-      hoopWorldMatrix.copy(hoopPivot.object3D.matrixWorld);
-      hoopWorldMatrixInverse.copy(hoopWorldMatrix).invert();
-      hoopContainer.object3D.position.setFromMatrixPosition(markerObj.matrixWorld);
-      hoopContainer.object3D.quaternion.setFromRotationMatrix(markerObj.matrixWorld);
-      hoopContainer.object3D.scale.setFromMatrixScale(markerObj.matrixWorld);
+      baseHoopPosition.setFromMatrixPosition(markerObj.matrixWorld);
+      baseHoopQuaternion.setFromRotationMatrix(markerObj.matrixWorld);
+      baseHoopScale.setFromMatrixScale(markerObj.matrixWorld);
     }
+    
+    // Calculate hoop movement offset for last 10 seconds
+    if (gameState === 'playing' && timeRemaining <= 10 && timeRemaining > 0) {
+      var elapsed = (now - gameStartTime) / 1000;
+      // Oscillate left and right using sine wave
+      hoopOffset.x = Math.sin(elapsed * HOOP_MOVE_SPEED) * HOOP_MOVE_AMPLITUDE;
+    } else {
+      // Smoothly return to center when not in last 10 seconds
+      hoopOffset.x *= 0.95;
+    }
+    
+    // Apply position with offset
+    var finalPosition = baseHoopPosition.clone().add(hoopOffset);
+    hoopContainer.object3D.position.copy(finalPosition);
+    hoopContainer.object3D.quaternion.copy(baseHoopQuaternion);
+    hoopContainer.object3D.scale.copy(baseHoopScale);
+    
+    // Update world matrices for physics
+    hoopPivot.object3D.updateMatrixWorld(true);
+    hoopWorldMatrix.copy(hoopPivot.object3D.matrixWorld);
+    hoopWorldMatrixInverse.copy(hoopWorldMatrix).invert();
+    
     updateNet(dt);
-    if (!hoopInitialized || gameState !== 'playing') { requestAnimationFrame(loop); return; }
+    
+    if (!hoopInitialized || gameState !== 'playing') { 
+      requestAnimationFrame(loop); 
+      return; 
+    }
+    
     for (var j = 0; j < balls.length; j++) {
       var b = balls[j];
       if (b.settled) continue;
