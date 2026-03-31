@@ -105,6 +105,43 @@
       50%{transform:scale(1.05)}
     }
     
+    /* Power meter */
+    #power-meter{
+      position:fixed;
+      bottom:100px;
+      left:50%;
+      transform:translateX(-50%);
+      width:200px;
+      height:20px;
+      background:rgba(0,0,0,0.5);
+      border-radius:10px;
+      overflow:hidden;
+      z-index:9997;
+      opacity:0;
+      transition:opacity 0.2s ease;
+    }
+    #power-meter.visible{opacity:1}
+    #power-fill{
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg, #4CAF50, #FFEB3B, #FF5722);
+      transition:width 0.05s linear;
+    }
+    #power-label{
+      position:fixed;
+      bottom:125px;
+      left:50%;
+      transform:translateX(-50%);
+      color:#fff;
+      font-size:14px;
+      font-weight:600;
+      text-shadow:0 2px 4px rgba(0,0,0,0.5);
+      z-index:9997;
+      opacity:0;
+      transition:opacity 0.2s ease;
+    }
+    #power-label.visible{opacity:1}
+    
     #game-over{
       position:fixed;
       top:0;left:0;right:0;bottom:0;
@@ -235,6 +272,9 @@
   <div id="timer-display">0:30</div>
 </div>
 
+<div id="power-label">POWER</div>
+<div id="power-meter"><div id="power-fill"></div></div>
+
 <div id="score-popup">+1</div>
 
 <div id="game-over">
@@ -253,25 +293,28 @@
   }
   document.write('<a-scene embedded arjs="' + arjsSettings + '" vr-mode-ui="enabled:false" renderer="antialias:true;alpha:true;precision:mediump;">');
 </script>
-  <a-assets>
-    <a-asset-item id="hoop-model" src="basketball_hoop.glb"></a-asset-item>
-  </a-assets>
   <a-entity camera></a-entity>
   <a-marker id="hiro-marker" preset="hiro" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="2"></a-marker>
   <a-entity id="hoop-container" visible="false">
     <a-entity id="hoop-pivot" rotation="-90 0 0">
-      <a-entity 
-        gltf-model="#hoop-model" 
-        position="0 0.38 -0.42"
-        rotation="0 180 0"
-        scale="0.23 0.12 0.23"
-      ></a-entity>
-      <a-torus class="net-ring" id="net0" position="0 -0.10 0" rotation="90 0 0" radius="0.29" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.5;transparent:true"></a-torus>
-      <a-torus class="net-ring" id="net1" position="0 -0.18 0" rotation="90 0 0" radius="0.26" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.45;transparent:true"></a-torus>
-      <a-torus class="net-ring" id="net2" position="0 -0.26 0" rotation="90 0 0" radius="0.23" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.4;transparent:true"></a-torus>
-      <a-torus class="net-ring" id="net3" position="0 -0.34 0" rotation="90 0 0" radius="0.20" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.35;transparent:true"></a-torus>
-      <a-torus class="net-ring" id="net4" position="0 -0.42 0" rotation="90 0 0" radius="0.17" radius-tubular="0.005" color="#FFFFFF" material="opacity:0.3;transparent:true"></a-torus>
-      <a-torus class="net-ring" id="net5" position="0 -0.50 0" rotation="90 0 0" radius="0.13" radius-tubular="0.005" color="#FFFFFF" material="opacity:0.2;transparent:true"></a-torus>
+      <!-- Backboard -->
+      <a-box position="0 0.5 -0.5" width="1.5" height="1.1" depth="0.08" color="#FFFFFF" material="opacity:0.95"></a-box>
+      <a-box position="0 0.5 -0.458" width="1.54" height="1.14" depth="0.005" color="#222"></a-box>
+      <!-- Target square -->
+      <a-box position="0 0.3 -0.454" width="0.6" height="0.45" depth="0.003" color="#FF5722" material="wireframe:true"></a-box>
+      <a-box position="0 0.3 -0.455" width="0.58" height="0.43" depth="0.004" color="#FF5722" material="opacity:0.15;transparent:true"></a-box>
+      <!-- Rim -->
+      <a-torus id="rim" position="0 -0.05 0.05" rotation="90 0 0" radius="0.32" radius-tubular="0.028" segments-radial="24" segments-tubular="48" color="#FF3D00" material="metalness:0.85;roughness:0.2"></a-torus>
+      <!-- Rim supports -->
+      <a-cylinder position="-0.16 0.22 -0.22" rotation="55 0 0" radius="0.02" height="0.55" color="#777" material="metalness:0.6"></a-cylinder>
+      <a-cylinder position="0.16 0.22 -0.22" rotation="55 0 0" radius="0.02" height="0.55" color="#777" material="metalness:0.6"></a-cylinder>
+      <!-- Net rings -->
+      <a-torus class="net-ring" id="net0" position="0 -0.10 0.05" rotation="90 0 0" radius="0.29" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.6;transparent:true"></a-torus>
+      <a-torus class="net-ring" id="net1" position="0 -0.18 0.05" rotation="90 0 0" radius="0.26" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.5;transparent:true"></a-torus>
+      <a-torus class="net-ring" id="net2" position="0 -0.26 0.05" rotation="90 0 0" radius="0.23" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.45;transparent:true"></a-torus>
+      <a-torus class="net-ring" id="net3" position="0 -0.34 0.05" rotation="90 0 0" radius="0.20" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.4;transparent:true"></a-torus>
+      <a-torus class="net-ring" id="net4" position="0 -0.42 0.05" rotation="90 0 0" radius="0.17" radius-tubular="0.005" color="#FFFFFF" material="opacity:0.35;transparent:true"></a-torus>
+      <a-torus class="net-ring" id="net5" position="0 -0.50 0.05" rotation="90 0 0" radius="0.13" radius-tubular="0.005" color="#FFFFFF" material="opacity:0.25;transparent:true"></a-torus>
     </a-entity>
   </a-entity>
 </a-scene>
@@ -287,26 +330,29 @@ sceneEl.addEventListener('loaded', function() {
   var gameStartTime = 0;
   
   // Hoop movement settings for last 10 seconds
-  var HOOP_MOVE_AMPLITUDE = 0.5; // How far left/right the hoop moves
-  var HOOP_MOVE_SPEED = 2.5; // How fast it oscillates
+  var HOOP_MOVE_AMPLITUDE = 0.4;
+  var HOOP_MOVE_SPEED = 2.0;
   var hoopOffset = new THREE.Vector3(0, 0, 0);
   
-  var GRAVITY = -9.8, BALL_R = 0.16, FRICTION = 0.25;
+  var GRAVITY = -9.8, BALL_R = 0.12, FRICTION = 0.3;
+  
+  // Net rings positioned relative to rim at z=0.05
   var NET_RINGS = [
-    {id:'net0',oy:0,oz:0.10,or:0.29},
-    {id:'net1',oy:0,oz:0.18,or:0.26},
-    {id:'net2',oy:0,oz:0.26,or:0.23},
-    {id:'net3',oy:0,oz:0.34,or:0.20},
-    {id:'net4',oy:0,oz:0.42,or:0.17},
-    {id:'net5',oy:0,oz:0.50,or:0.13}
+    {id:'net0',oz:0.10,or:0.29},
+    {id:'net1',oz:0.18,or:0.26},
+    {id:'net2',oz:0.26,or:0.23},
+    {id:'net3',oz:0.34,or:0.20},
+    {id:'net4',oz:0.42,or:0.17},
+    {id:'net5',oz:0.50,or:0.13}
   ];
   var netState = NET_RINGS.map(function(r) {
-    return {el:null,id:r.id,oy:r.oy,oz:r.oz,or:r.or,offsetX:0,offsetY:0,velX:0,velY:0};
+    return {el:null,id:r.id,oz:r.oz,or:r.or,baseZ:0.05,offsetX:0,offsetY:0,velX:0,velY:0};
   });
   
+  // Collision geometry
   var C = {
-    rim: {cx:0,cy:0,cz:0.05,majorR:0.32,tubeR:0.028,bounce:0.55},
-    backboard: {cx:0,cy:0,cz:-0.5,hw:0.75,hh:0.55,hd:0.04,bounce:0.45}
+    rim: {cx:0,cy:0,cz:0.05,majorR:0.32,tubeR:0.028,bounce:0.6},
+    backboard: {cx:0,cy:0.5,cz:-0.5,hw:0.75,hh:0.55,hd:0.04,bounce:0.5}
   };
 
   var markerVisible = false, hoopInitialized = false, balls = [], swipeStart = null;
@@ -321,6 +367,9 @@ sceneEl.addEventListener('loaded', function() {
   var gameHud = document.getElementById('game-hud');
   var scoreDisplay = document.getElementById('score-display');
   var timerDisplay = document.getElementById('timer-display');
+  var powerMeter = document.getElementById('power-meter');
+  var powerFill = document.getElementById('power-fill');
+  var powerLabel = document.getElementById('power-label');
   var scorePopup = document.getElementById('score-popup');
   var gameOverScreen = document.getElementById('game-over');
   var finalScoreEl = document.getElementById('final-score');
@@ -426,6 +475,8 @@ sceneEl.addEventListener('loaded', function() {
     
     gameHud.classList.remove('visible');
     timerDisplay.classList.remove('warning');
+    powerMeter.classList.remove('visible');
+    powerLabel.classList.remove('visible');
     
     finalScoreEl.textContent = score;
     gameOverScreen.classList.add('visible');
@@ -480,6 +531,9 @@ sceneEl.addEventListener('loaded', function() {
     e.preventDefault();
     var t = getXY(e);
     swipeStart = {x: t.x, y: t.y, time: Date.now()};
+    powerMeter.classList.add('visible');
+    powerLabel.classList.add('visible');
+    powerFill.style.width = '0%';
   }
 
   function tsM(e) {
@@ -487,6 +541,12 @@ sceneEl.addEventListener('loaded', function() {
     e.preventDefault();
     if (!swipeStart) return;
     var t = getXY(e);
+    
+    // Calculate current power based on swipe distance
+    var dy = swipeStart.y - t.y;
+    var power = Math.min(Math.max(dy / 300, 0), 1);
+    powerFill.style.width = (power * 100) + '%';
+    
     var tr = document.createElement('div');
     tr.className = 'swipe-trail';
     tr.style.left = (t.x - 7) + 'px';
@@ -498,15 +558,20 @@ sceneEl.addEventListener('loaded', function() {
   function tsE(e) {
     if (gameState !== 'playing') return;
     e.preventDefault();
+    powerMeter.classList.remove('visible');
+    powerLabel.classList.remove('visible');
     if (!swipeStart) return;
     var t = getXY(e);
-    var dx = t.x - swipeStart.x, dy = t.y - swipeStart.y, dt = (Date.now() - swipeStart.time) / 1000;
+    var dx = t.x - swipeStart.x, dy = t.y - swipeStart.y;
     swipeStart = null;
-    if (dy > -20) return;
-    var dist = Math.sqrt(dx * dx + dy * dy);
-    var speed = dist / Math.max(dt, 0.05);
+    
+    // Must swipe upward
+    if (dy > -30) return;
+    
+    // Power based on vertical swipe distance (not speed)
+    var power = Math.min(Math.max(-dy / 300, 0.1), 1.0);
     var hBias = dx / window.innerWidth;
-    var power = Math.min(Math.max(speed / 1200, 0.3), 1.0);
+    
     shoot(power, hBias);
   }
 
@@ -519,37 +584,69 @@ sceneEl.addEventListener('loaded', function() {
 
   function shoot(power, hBias) {
     if (!hoopInitialized || gameState !== 'playing') return;
+    
     var ball = document.createElement('a-sphere');
     ball.setAttribute('radius', String(BALL_R));
     ball.setAttribute('color', '#FF6D00');
     ball.setAttribute('material', 'roughness:0.55;metalness:0.1');
-    var rimLocal = new THREE.Vector3(0, 0, 0.05);
-    var rimW = rimLocal.clone().applyMatrix4(hoopWorldMatrix);
+    
+    // Get camera position and direction
     var cam = document.querySelector('[camera]').object3D;
     var cp = new THREE.Vector3(), cd = new THREE.Vector3();
     cam.getWorldPosition(cp);
     cam.getWorldDirection(cd);
-    var sp = cp.clone().add(cd.clone().multiplyScalar(0.4)).add(new THREE.Vector3(0, -0.3, 0));
+    
+    // Ball starts in front of camera, slightly below
+    var sp = cp.clone().add(cd.clone().multiplyScalar(0.3)).add(new THREE.Vector3(0, -0.25, 0));
     ball.setAttribute('position', sp.x + ' ' + sp.y + ' ' + sp.z);
     sceneEl.appendChild(ball);
-    var tp = rimW.clone();
-    var cr = new THREE.Vector3();
-    cr.crossVectors(cd, new THREE.Vector3(0, 1, 0)).normalize();
-    tp.add(cr.clone().multiplyScalar(hBias * 1.2));
-    var acc = 0.8 + power * 0.2;
-    tp.add(new THREE.Vector3(
-      (Math.random() - 0.5) * (1 - acc) * 0.5,
-      (Math.random() - 0.5) * (1 - acc) * 0.3,
-      (Math.random() - 0.5) * (1 - acc) * 0.5
-    ));
-    var d = tp.clone().sub(sp);
-    var hDist = Math.sqrt(d.x * d.x + d.z * d.z);
-    var spd = 3.5 + power * 5;
-    var ft = hDist / spd || 0.8;
+    
+    // Get rim position in world space
+    var rimLocal = new THREE.Vector3(0, 0, 0.05);
+    var rimW = rimLocal.clone().applyMatrix4(hoopWorldMatrix);
+    
+    // Calculate velocity based on power
+    // Low power = falls short, high power = overshoots
+    var baseSpeed = 4.0;  // Minimum speed
+    var maxSpeed = 12.0;  // Maximum speed
+    var speed = baseSpeed + power * (maxSpeed - baseSpeed);
+    
+    // Direction toward rim with horizontal bias
+    var toRim = rimW.clone().sub(sp);
+    var dist = toRim.length();
+    
+    // Calculate arc - lower power = lower arc
+    var arcHeight = 0.3 + power * 0.7; // Arc multiplier
+    
+    // Time to reach rim (approximate)
+    var hDist = Math.sqrt(toRim.x * toRim.x + toRim.z * toRim.z);
+    var flightTime = hDist / (speed * 0.7); // Horizontal component
+    
+    // Calculate initial velocity
+    var vx = toRim.x / flightTime;
+    var vz = toRim.z / flightTime;
+    // Add vertical velocity for arc (compensate for gravity)
+    var vy = (toRim.y / flightTime) - (0.5 * GRAVITY * flightTime * arcHeight);
+    
+    // Apply horizontal bias for aiming left/right
+    var right = new THREE.Vector3();
+    right.crossVectors(cd, new THREE.Vector3(0, 1, 0)).normalize();
+    vx += right.x * hBias * 3;
+    vz += right.z * hBias * 3;
+    
+    // Scale velocity by power - this is the key!
+    // Low power = ball doesn't reach rim
+    // Perfect power = ball reaches rim
+    // High power = ball overshoots into backboard
+    var powerScale = 0.5 + power * 0.7; // 0.5 to 1.2
+    vx *= powerScale;
+    vy *= powerScale;
+    vz *= powerScale;
+    
     var b = {
       el: ball,
       pos: sp.clone(),
-      vel: new THREE.Vector3(d.x / ft, (d.y - 0.5 * GRAVITY * ft * ft) / ft, d.z / ft),
+      vel: new THREE.Vector3(vx, vy, vz),
       time: 0,
       settled: false,
       scored: false,
@@ -559,12 +656,14 @@ sceneEl.addEventListener('loaded', function() {
       inNet: false
     };
     balls.push(b);
+    
     setTimeout(function() {
       if (ball.parentNode) ball.parentNode.removeChild(ball);
       var i = balls.indexOf(b);
       if (i > -1) balls.splice(i, 1);
     }, 8000);
-    if (navigator.vibrate) navigator.vibrate(30);
+    
+    if (navigator.vibrate) navigator.vibrate(20 + power * 30);
   }
 
   function w2l(v) { return v.clone().applyMatrix4(hoopWorldMatrixInverse); }
@@ -638,7 +737,7 @@ sceneEl.addEventListener('loaded', function() {
     return false;
   }
 
-  var NET_SPRING = 80, NET_DAMP = 8, NET_PUSH = 1.2;
+  var NET_SPRING = 80, NET_DAMP = 8, NET_PUSH = 1.5;
   function updateNet(dt) {
     for (var i = 0; i < netState.length; i++) {
       var ns = netState[i];
@@ -651,15 +750,15 @@ sceneEl.addEventListener('loaded', function() {
       ns.offsetY += ns.velY * dt;
       ns.offsetX = Math.max(-0.15, Math.min(0.15, ns.offsetX));
       ns.offsetY = Math.max(-0.15, Math.min(0.15, ns.offsetY));
-      ns.el.setAttribute('position', ns.offsetX.toFixed(4) + ' ' + (-ns.oz + ns.offsetY).toFixed(4) + ' 0');
+      ns.el.setAttribute('position', ns.offsetX.toFixed(4) + ' ' + (-ns.oz + ns.offsetY).toFixed(4) + ' ' + ns.baseZ.toFixed(4));
     }
   }
 
   function pushNetRing(idx, lp, lv) {
     var ns = netState[idx];
     if (!ns) return;
-    ns.velX += (lp.x * NET_PUSH + lv.x * 0.05) * 15;
-    ns.velY += (lp.y * NET_PUSH + lv.y * 0.05) * 15;
+    ns.velX += (lp.x * NET_PUSH + lv.x * 0.1) * 20;
+    ns.velY += (lp.y * NET_PUSH + lv.y * 0.1) * 20;
   }
 
   function checkNetPassThrough(b, lp, lv) {
@@ -668,15 +767,17 @@ sceneEl.addEventListener('loaded', function() {
       var ring = NET_RINGS[i];
       var dxR = lp.x - C.rim.cx, dyR = lp.y - C.rim.cy;
       var distFromCenter = Math.sqrt(dxR * dxR + dyR * dyR);
-      if (distFromCenter < ring.or + BALL_R * 0.8 && lp.z > ring.oz - BALL_R * 1.5 && lp.z < ring.oz + BALL_R * 2.5 && lv.z > 0) {
+      // Ball must be within ring radius, at correct Z depth, moving forward (through hoop)
+      if (distFromCenter < ring.or + BALL_R && lp.z > ring.oz - BALL_R && lp.z < ring.oz + BALL_R * 3 && lv.z > 0) {
         b.passedNetRings.add(i);
         pushNetRing(i, lp, lv);
-        lv.x *= 0.92;
-        lv.y *= 0.92;
-        lv.z *= 0.95;
+        lv.x *= 0.88;
+        lv.y *= 0.88;
+        lv.z *= 0.92;
         b.inNet = true;
       }
     }
+    // Score after passing through 2 net rings
     if (!b.scored && b.passedNetRings.size >= 2 && lv.z > 0) {
       b.scored = true;
       score++;
@@ -703,15 +804,17 @@ sceneEl.addEventListener('loaded', function() {
     // Calculate hoop movement offset for last 10 seconds
     if (gameState === 'playing' && timeRemaining <= 10 && timeRemaining > 0) {
       var elapsed = (now - gameStartTime) / 1000;
-      // Oscillate left and right using sine wave
       hoopOffset.x = Math.sin(elapsed * HOOP_MOVE_SPEED) * HOOP_MOVE_AMPLITUDE;
     } else {
-      // Smoothly return to center when not in last 10 seconds
-      hoopOffset.x *= 0.95;
+      hoopOffset.x *= 0.9;
     }
     
     // Apply position with offset
-    var finalPosition = baseHoopPosition.clone().add(hoopOffset);
+    var finalPosition = baseHoopPosition.clone();
+    // Apply offset in local marker space
+    var offsetWorld = hoopOffset.clone().applyQuaternion(baseHoopQuaternion);
+    finalPosition.add(offsetWorld);
+    
     hoopContainer.object3D.position.copy(finalPosition);
     hoopContainer.object3D.quaternion.copy(baseHoopQuaternion);
     hoopContainer.object3D.scale.copy(baseHoopScale);
@@ -747,7 +850,7 @@ sceneEl.addEventListener('loaded', function() {
         if (hitBox(lp, lv, C.backboard)) {
           b.bounces++;
           b.cooldowns.bb = ms;
-          if (navigator.vibrate) navigator.vibrate(15);
+          if (navigator.vibrate) navigator.vibrate(25);
         }
       }
       checkNetPassThrough(b, lp, lv);
