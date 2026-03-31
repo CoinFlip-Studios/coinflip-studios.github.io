@@ -105,7 +105,6 @@
       50%{transform:scale(1.05)}
     }
     
-    /* Power meter */
     #power-meter{
       position:fixed;
       bottom:100px;
@@ -296,25 +295,26 @@
   <a-entity camera></a-entity>
   <a-marker id="hiro-marker" preset="hiro" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="2"></a-marker>
   <a-entity id="hoop-container" visible="false">
-    <a-entity id="hoop-pivot" rotation="-90 0 0">
-      <!-- Backboard -->
-      <a-box position="0 0.5 -0.5" width="1.5" height="1.1" depth="0.08" color="#FFFFFF" material="opacity:0.95"></a-box>
-      <a-box position="0 0.5 -0.458" width="1.54" height="1.14" depth="0.005" color="#222"></a-box>
+    <!-- Offset the whole hoop forward (positive Z in pivot space = away from marker) -->
+    <a-entity id="hoop-pivot" rotation="-90 0 0" position="0 0 1.5">
+      <!-- Backboard - now at local z=0 since we moved the pivot -->
+      <a-box position="0 0.5 0" width="1.5" height="1.1" depth="0.08" color="#FFFFFF" material="opacity:0.95"></a-box>
+      <a-box position="0 0.5 0.042" width="1.54" height="1.14" depth="0.005" color="#222"></a-box>
       <!-- Target square -->
-      <a-box position="0 0.3 -0.454" width="0.6" height="0.45" depth="0.003" color="#FF5722" material="wireframe:true"></a-box>
-      <a-box position="0 0.3 -0.455" width="0.58" height="0.43" depth="0.004" color="#FF5722" material="opacity:0.15;transparent:true"></a-box>
-      <!-- Rim -->
-      <a-torus id="rim" position="0 -0.05 0.05" rotation="90 0 0" radius="0.32" radius-tubular="0.028" segments-radial="24" segments-tubular="48" color="#FF3D00" material="metalness:0.85;roughness:0.2"></a-torus>
+      <a-box position="0 0.3 0.046" width="0.6" height="0.45" depth="0.003" color="#FF5722" material="wireframe:true"></a-box>
+      <a-box position="0 0.3 0.045" width="0.58" height="0.43" depth="0.004" color="#FF5722" material="opacity:0.15;transparent:true"></a-box>
+      <!-- Rim - in front of backboard -->
+      <a-torus id="rim" position="0 -0.05 0.55" rotation="90 0 0" radius="0.32" radius-tubular="0.028" segments-radial="24" segments-tubular="48" color="#FF3D00" material="metalness:0.85;roughness:0.2"></a-torus>
       <!-- Rim supports -->
-      <a-cylinder position="-0.16 0.22 -0.22" rotation="55 0 0" radius="0.02" height="0.55" color="#777" material="metalness:0.6"></a-cylinder>
-      <a-cylinder position="0.16 0.22 -0.22" rotation="55 0 0" radius="0.02" height="0.55" color="#777" material="metalness:0.6"></a-cylinder>
-      <!-- Net rings -->
-      <a-torus class="net-ring" id="net0" position="0 -0.10 0.05" rotation="90 0 0" radius="0.29" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.6;transparent:true"></a-torus>
-      <a-torus class="net-ring" id="net1" position="0 -0.18 0.05" rotation="90 0 0" radius="0.26" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.5;transparent:true"></a-torus>
-      <a-torus class="net-ring" id="net2" position="0 -0.26 0.05" rotation="90 0 0" radius="0.23" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.45;transparent:true"></a-torus>
-      <a-torus class="net-ring" id="net3" position="0 -0.34 0.05" rotation="90 0 0" radius="0.20" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.4;transparent:true"></a-torus>
-      <a-torus class="net-ring" id="net4" position="0 -0.42 0.05" rotation="90 0 0" radius="0.17" radius-tubular="0.005" color="#FFFFFF" material="opacity:0.35;transparent:true"></a-torus>
-      <a-torus class="net-ring" id="net5" position="0 -0.50 0.05" rotation="90 0 0" radius="0.13" radius-tubular="0.005" color="#FFFFFF" material="opacity:0.25;transparent:true"></a-torus>
+      <a-cylinder position="-0.16 0.22 0.28" rotation="55 0 0" radius="0.02" height="0.55" color="#777" material="metalness:0.6"></a-cylinder>
+      <a-cylinder position="0.16 0.22 0.28" rotation="55 0 0" radius="0.02" height="0.55" color="#777" material="metalness:0.6"></a-cylinder>
+      <!-- Net rings - hanging below rim -->
+      <a-torus class="net-ring" id="net0" position="0 -0.10 0.55" rotation="90 0 0" radius="0.29" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.6;transparent:true"></a-torus>
+      <a-torus class="net-ring" id="net1" position="0 -0.18 0.55" rotation="90 0 0" radius="0.26" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.5;transparent:true"></a-torus>
+      <a-torus class="net-ring" id="net2" position="0 -0.26 0.55" rotation="90 0 0" radius="0.23" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.45;transparent:true"></a-torus>
+      <a-torus class="net-ring" id="net3" position="0 -0.34 0.55" rotation="90 0 0" radius="0.20" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.4;transparent:true"></a-torus>
+      <a-torus class="net-ring" id="net4" position="0 -0.42 0.55" rotation="90 0 0" radius="0.17" radius-tubular="0.005" color="#FFFFFF" material="opacity:0.35;transparent:true"></a-torus>
+      <a-torus class="net-ring" id="net5" position="0 -0.50 0.55" rotation="90 0 0" radius="0.13" radius-tubular="0.005" color="#FFFFFF" material="opacity:0.25;transparent:true"></a-torus>
     </a-entity>
   </a-entity>
 </a-scene>
@@ -329,14 +329,13 @@ sceneEl.addEventListener('loaded', function() {
   var gameTimer = null;
   var gameStartTime = 0;
   
-  // Hoop movement settings for last 10 seconds
   var HOOP_MOVE_AMPLITUDE = 0.4;
   var HOOP_MOVE_SPEED = 2.0;
   var hoopOffset = new THREE.Vector3(0, 0, 0);
   
   var GRAVITY = -9.8, BALL_R = 0.12, FRICTION = 0.3;
   
-  // Net rings positioned relative to rim at z=0.05
+  // Net rings at z=0.55 (rim position) going downward
   var NET_RINGS = [
     {id:'net0',oz:0.10,or:0.29},
     {id:'net1',oz:0.18,or:0.26},
@@ -346,13 +345,13 @@ sceneEl.addEventListener('loaded', function() {
     {id:'net5',oz:0.50,or:0.13}
   ];
   var netState = NET_RINGS.map(function(r) {
-    return {el:null,id:r.id,oz:r.oz,or:r.or,baseZ:0.05,offsetX:0,offsetY:0,velX:0,velY:0};
+    return {el:null,id:r.id,oz:r.oz,or:r.or,baseZ:0.55,offsetX:0,offsetY:0,velX:0,velY:0};
   });
   
-  // Collision geometry
+  // Collision geometry in hoop-pivot local space
   var C = {
-    rim: {cx:0,cy:0,cz:0.05,majorR:0.32,tubeR:0.028,bounce:0.6},
-    backboard: {cx:0,cy:0.5,cz:-0.5,hw:0.75,hh:0.55,hd:0.04,bounce:0.5}
+    rim: {cx:0,cy:0,cz:0.55,majorR:0.32,tubeR:0.028,bounce:0.6},
+    backboard: {cx:0,cy:0.5,cz:0,hw:0.75,hh:0.55,hd:0.04,bounce:0.5}
   };
 
   var markerVisible = false, hoopInitialized = false, balls = [], swipeStart = null;
@@ -542,7 +541,6 @@ sceneEl.addEventListener('loaded', function() {
     if (!swipeStart) return;
     var t = getXY(e);
     
-    // Calculate current power based on swipe distance
     var dy = swipeStart.y - t.y;
     var power = Math.min(Math.max(dy / 300, 0), 1);
     powerFill.style.width = (power * 100) + '%';
@@ -565,10 +563,8 @@ sceneEl.addEventListener('loaded', function() {
     var dx = t.x - swipeStart.x, dy = t.y - swipeStart.y;
     swipeStart = null;
     
-    // Must swipe upward
     if (dy > -30) return;
     
-    // Power based on vertical swipe distance (not speed)
     var power = Math.min(Math.max(-dy / 300, 0.1), 1.0);
     var hBias = dx / window.innerWidth;
     
@@ -590,55 +586,39 @@ sceneEl.addEventListener('loaded', function() {
     ball.setAttribute('color', '#FF6D00');
     ball.setAttribute('material', 'roughness:0.55;metalness:0.1');
     
-    // Get camera position and direction
     var cam = document.querySelector('[camera]').object3D;
     var cp = new THREE.Vector3(), cd = new THREE.Vector3();
     cam.getWorldPosition(cp);
     cam.getWorldDirection(cd);
     
-    // Ball starts in front of camera, slightly below
     var sp = cp.clone().add(cd.clone().multiplyScalar(0.3)).add(new THREE.Vector3(0, -0.25, 0));
     ball.setAttribute('position', sp.x + ' ' + sp.y + ' ' + sp.z);
     sceneEl.appendChild(ball);
     
-    // Get rim position in world space
-    var rimLocal = new THREE.Vector3(0, 0, 0.05);
+    // Rim is at local (0, 0, 0.55) in hoop-pivot space
+    var rimLocal = new THREE.Vector3(0, 0, 0.55);
     var rimW = rimLocal.clone().applyMatrix4(hoopWorldMatrix);
     
-    // Calculate velocity based on power
-    // Low power = falls short, high power = overshoots
-    var baseSpeed = 4.0;  // Minimum speed
-    var maxSpeed = 12.0;  // Maximum speed
+    var baseSpeed = 4.0;
+    var maxSpeed = 12.0;
     var speed = baseSpeed + power * (maxSpeed - baseSpeed);
     
-    // Direction toward rim with horizontal bias
     var toRim = rimW.clone().sub(sp);
-    var dist = toRim.length();
+    var arcHeight = 0.3 + power * 0.7;
     
-    // Calculate arc - lower power = lower arc
-    var arcHeight = 0.3 + power * 0.7; // Arc multiplier
-    
-    // Time to reach rim (approximate)
     var hDist = Math.sqrt(toRim.x * toRim.x + toRim.z * toRim.z);
-    var flightTime = hDist / (speed * 0.7); // Horizontal component
+    var flightTime = hDist / (speed * 0.7);
     
-    // Calculate initial velocity
     var vx = toRim.x / flightTime;
     var vz = toRim.z / flightTime;
-    // Add vertical velocity for arc (compensate for gravity)
     var vy = (toRim.y / flightTime) - (0.5 * GRAVITY * flightTime * arcHeight);
     
-    // Apply horizontal bias for aiming left/right
     var right = new THREE.Vector3();
     right.crossVectors(cd, new THREE.Vector3(0, 1, 0)).normalize();
     vx += right.x * hBias * 3;
     vz += right.z * hBias * 3;
     
-    // Scale velocity by power - this is the key!
-    // Low power = ball doesn't reach rim
-    // Perfect power = ball reaches rim
-    // High power = ball overshoots into backboard
-    var powerScale = 0.5 + power * 0.7; // 0.5 to 1.2
+    var powerScale = 0.5 + power * 0.7;
     vx *= powerScale;
     vy *= powerScale;
     vz *= powerScale;
@@ -767,8 +747,9 @@ sceneEl.addEventListener('loaded', function() {
       var ring = NET_RINGS[i];
       var dxR = lp.x - C.rim.cx, dyR = lp.y - C.rim.cy;
       var distFromCenter = Math.sqrt(dxR * dxR + dyR * dyR);
-      // Ball must be within ring radius, at correct Z depth, moving forward (through hoop)
-      if (distFromCenter < ring.or + BALL_R && lp.z > ring.oz - BALL_R && lp.z < ring.oz + BALL_R * 3 && lv.z > 0) {
+      // Check if ball is passing through net ring area (rim z + ring offset)
+      var ringZ = C.rim.cz;
+      if (distFromCenter < ring.or + BALL_R && lp.z > ringZ - BALL_R && lp.z < ringZ + BALL_R * 3 && lv.z > 0) {
         b.passedNetRings.add(i);
         pushNetRing(i, lp, lv);
         lv.x *= 0.88;
@@ -777,7 +758,6 @@ sceneEl.addEventListener('loaded', function() {
         b.inNet = true;
       }
     }
-    // Score after passing through 2 net rings
     if (!b.scored && b.passedNetRings.size >= 2 && lv.z > 0) {
       b.scored = true;
       score++;
@@ -792,7 +772,6 @@ sceneEl.addEventListener('loaded', function() {
     var dt = Math.min((now - lt) / 1000, 0.05);
     lt = now;
     
-    // Update base hoop position from marker when visible
     if (markerVisible) {
       var markerObj = markerEl.object3D;
       markerObj.updateMatrixWorld(true);
@@ -801,7 +780,6 @@ sceneEl.addEventListener('loaded', function() {
       baseHoopScale.setFromMatrixScale(markerObj.matrixWorld);
     }
     
-    // Calculate hoop movement offset for last 10 seconds
     if (gameState === 'playing' && timeRemaining <= 10 && timeRemaining > 0) {
       var elapsed = (now - gameStartTime) / 1000;
       hoopOffset.x = Math.sin(elapsed * HOOP_MOVE_SPEED) * HOOP_MOVE_AMPLITUDE;
@@ -809,9 +787,7 @@ sceneEl.addEventListener('loaded', function() {
       hoopOffset.x *= 0.9;
     }
     
-    // Apply position with offset
     var finalPosition = baseHoopPosition.clone();
-    // Apply offset in local marker space
     var offsetWorld = hoopOffset.clone().applyQuaternion(baseHoopQuaternion);
     finalPosition.add(offsetWorld);
     
@@ -819,7 +795,6 @@ sceneEl.addEventListener('loaded', function() {
     hoopContainer.object3D.quaternion.copy(baseHoopQuaternion);
     hoopContainer.object3D.scale.copy(baseHoopScale);
     
-    // Update world matrices for physics
     hoopPivot.object3D.updateMatrixWorld(true);
     hoopWorldMatrix.copy(hoopPivot.object3D.matrixWorld);
     hoopWorldMatrixInverse.copy(hoopWorldMatrix).invert();
