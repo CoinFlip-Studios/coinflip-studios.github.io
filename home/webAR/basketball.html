@@ -290,31 +290,30 @@
   if (isAndroid) {
     arjsSettings += 'sourceWidth:640;sourceHeight:480;displayWidth:640;displayHeight:480;';
   }
-  document.write('<a-scene embedded arjs="' + arjsSettings + '" vr-mode-ui="enabled:false" renderer="antialias:true;alpha:true;precision:mediump;">');
+  document.write('<a-scene embedded arjs="' + arjsSettings + '" vr-mode-ui="enabled:false" renderer="antialias:true;alpha:true;precision:mediump;logarithmicDepthBuffer:true;">');
 </script>
   <a-entity camera></a-entity>
   <a-marker id="hiro-marker" preset="hiro" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="2"></a-marker>
   <a-entity id="hoop-container" visible="false">
-    <!-- Offset the whole hoop forward (positive Z in pivot space = away from marker) -->
-    <a-entity id="hoop-pivot" rotation="-90 0 0" position="0 0 1.5">
-      <!-- Backboard - now at local z=0 since we moved the pivot -->
-      <a-box position="0 0.5 0" width="1.5" height="1.1" depth="0.08" color="#FFFFFF" material="opacity:0.95"></a-box>
-      <a-box position="0 0.5 0.042" width="1.54" height="1.14" depth="0.005" color="#222"></a-box>
+    <a-entity id="hoop-pivot" rotation="-90 0 0">
+      <!-- Backboard - moved back to original position with slight offset to prevent z-fighting -->
+      <a-box position="0 0.5 -0.5" width="1.5" height="1.1" depth="0.08" color="#FFFFFF" material="opacity:0.95;side:double"></a-box>
+      <a-box position="0 0.5 -0.455" width="1.54" height="1.14" depth="0.005" color="#222" material="side:double"></a-box>
       <!-- Target square -->
-      <a-box position="0 0.3 0.046" width="0.6" height="0.45" depth="0.003" color="#FF5722" material="wireframe:true"></a-box>
-      <a-box position="0 0.3 0.045" width="0.58" height="0.43" depth="0.004" color="#FF5722" material="opacity:0.15;transparent:true"></a-box>
-      <!-- Rim - in front of backboard -->
-      <a-torus id="rim" position="0 -0.05 0.55" rotation="90 0 0" radius="0.32" radius-tubular="0.028" segments-radial="24" segments-tubular="48" color="#FF3D00" material="metalness:0.85;roughness:0.2"></a-torus>
+      <a-box position="0 0.3 -0.45" width="0.6" height="0.45" depth="0.003" color="#FF5722" material="wireframe:true"></a-box>
+      <a-box position="0 0.3 -0.448" width="0.58" height="0.43" depth="0.004" color="#FF5722" material="opacity:0.15;transparent:true"></a-box>
+      <!-- Rim -->
+      <a-torus id="rim" position="0 -0.05 0.05" rotation="90 0 0" radius="0.32" radius-tubular="0.028" segments-radial="24" segments-tubular="48" color="#FF3D00" material="metalness:0.85;roughness:0.2"></a-torus>
       <!-- Rim supports -->
-      <a-cylinder position="-0.16 0.22 0.28" rotation="55 0 0" radius="0.02" height="0.55" color="#777" material="metalness:0.6"></a-cylinder>
-      <a-cylinder position="0.16 0.22 0.28" rotation="55 0 0" radius="0.02" height="0.55" color="#777" material="metalness:0.6"></a-cylinder>
-      <!-- Net rings - hanging below rim -->
-      <a-torus class="net-ring" id="net0" position="0 -0.10 0.55" rotation="90 0 0" radius="0.29" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.6;transparent:true"></a-torus>
-      <a-torus class="net-ring" id="net1" position="0 -0.18 0.55" rotation="90 0 0" radius="0.26" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.5;transparent:true"></a-torus>
-      <a-torus class="net-ring" id="net2" position="0 -0.26 0.55" rotation="90 0 0" radius="0.23" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.45;transparent:true"></a-torus>
-      <a-torus class="net-ring" id="net3" position="0 -0.34 0.55" rotation="90 0 0" radius="0.20" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.4;transparent:true"></a-torus>
-      <a-torus class="net-ring" id="net4" position="0 -0.42 0.55" rotation="90 0 0" radius="0.17" radius-tubular="0.005" color="#FFFFFF" material="opacity:0.35;transparent:true"></a-torus>
-      <a-torus class="net-ring" id="net5" position="0 -0.50 0.55" rotation="90 0 0" radius="0.13" radius-tubular="0.005" color="#FFFFFF" material="opacity:0.25;transparent:true"></a-torus>
+      <a-cylinder position="-0.16 0.22 -0.22" rotation="55 0 0" radius="0.02" height="0.55" color="#777" material="metalness:0.6"></a-cylinder>
+      <a-cylinder position="0.16 0.22 -0.22" rotation="55 0 0" radius="0.02" height="0.55" color="#777" material="metalness:0.6"></a-cylinder>
+      <!-- Net rings -->
+      <a-torus class="net-ring" id="net0" position="0 -0.10 0.05" rotation="90 0 0" radius="0.29" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.6;transparent:true"></a-torus>
+      <a-torus class="net-ring" id="net1" position="0 -0.18 0.05" rotation="90 0 0" radius="0.26" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.5;transparent:true"></a-torus>
+      <a-torus class="net-ring" id="net2" position="0 -0.26 0.05" rotation="90 0 0" radius="0.23" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.45;transparent:true"></a-torus>
+      <a-torus class="net-ring" id="net3" position="0 -0.34 0.05" rotation="90 0 0" radius="0.20" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.4;transparent:true"></a-torus>
+      <a-torus class="net-ring" id="net4" position="0 -0.42 0.05" rotation="90 0 0" radius="0.17" radius-tubular="0.005" color="#FFFFFF" material="opacity:0.35;transparent:true"></a-torus>
+      <a-torus class="net-ring" id="net5" position="0 -0.50 0.05" rotation="90 0 0" radius="0.13" radius-tubular="0.005" color="#FFFFFF" material="opacity:0.25;transparent:true"></a-torus>
     </a-entity>
   </a-entity>
 </a-scene>
@@ -335,7 +334,6 @@ sceneEl.addEventListener('loaded', function() {
   
   var GRAVITY = -9.8, BALL_R = 0.12, FRICTION = 0.3;
   
-  // Net rings at z=0.55 (rim position) going downward
   var NET_RINGS = [
     {id:'net0',oz:0.10,or:0.29},
     {id:'net1',oz:0.18,or:0.26},
@@ -345,13 +343,13 @@ sceneEl.addEventListener('loaded', function() {
     {id:'net5',oz:0.50,or:0.13}
   ];
   var netState = NET_RINGS.map(function(r) {
-    return {el:null,id:r.id,oz:r.oz,or:r.or,baseZ:0.55,offsetX:0,offsetY:0,velX:0,velY:0};
+    return {el:null,id:r.id,oz:r.oz,or:r.or,baseZ:0.05,offsetX:0,offsetY:0,velX:0,velY:0};
   });
   
-  // Collision geometry in hoop-pivot local space
+  // Collision geometry - original positions
   var C = {
-    rim: {cx:0,cy:0,cz:0.55,majorR:0.32,tubeR:0.028,bounce:0.6},
-    backboard: {cx:0,cy:0.5,cz:0,hw:0.75,hh:0.55,hd:0.04,bounce:0.5}
+    rim: {cx:0,cy:0,cz:0.05,majorR:0.32,tubeR:0.028,bounce:0.6},
+    backboard: {cx:0,cy:0.5,cz:-0.5,hw:0.75,hh:0.55,hd:0.04,bounce:0.5}
   };
 
   var markerVisible = false, hoopInitialized = false, balls = [], swipeStart = null;
@@ -566,7 +564,8 @@ sceneEl.addEventListener('loaded', function() {
     if (dy > -30) return;
     
     var power = Math.min(Math.max(-dy / 300, 0.1), 1.0);
-    var hBias = dx / window.innerWidth;
+    // FIXED: Inverted hBias so swipe right goes right
+    var hBias = -dx / window.innerWidth;
     
     shoot(power, hBias);
   }
@@ -595,8 +594,7 @@ sceneEl.addEventListener('loaded', function() {
     ball.setAttribute('position', sp.x + ' ' + sp.y + ' ' + sp.z);
     sceneEl.appendChild(ball);
     
-    // Rim is at local (0, 0, 0.55) in hoop-pivot space
-    var rimLocal = new THREE.Vector3(0, 0, 0.55);
+    var rimLocal = new THREE.Vector3(0, 0, 0.05);
     var rimW = rimLocal.clone().applyMatrix4(hoopWorldMatrix);
     
     var baseSpeed = 4.0;
@@ -613,6 +611,7 @@ sceneEl.addEventListener('loaded', function() {
     var vz = toRim.z / flightTime;
     var vy = (toRim.y / flightTime) - (0.5 * GRAVITY * flightTime * arcHeight);
     
+    // Apply horizontal bias - use camera's right vector
     var right = new THREE.Vector3();
     right.crossVectors(cd, new THREE.Vector3(0, 1, 0)).normalize();
     vx += right.x * hBias * 3;
@@ -747,7 +746,6 @@ sceneEl.addEventListener('loaded', function() {
       var ring = NET_RINGS[i];
       var dxR = lp.x - C.rim.cx, dyR = lp.y - C.rim.cy;
       var distFromCenter = Math.sqrt(dxR * dxR + dyR * dyR);
-      // Check if ball is passing through net ring area (rim z + ring offset)
       var ringZ = C.rim.cz;
       if (distFromCenter < ring.or + BALL_R && lp.z > ringZ - BALL_R && lp.z < ringZ + BALL_R * 3 && lv.z > 0) {
         b.passedNetRings.add(i);
