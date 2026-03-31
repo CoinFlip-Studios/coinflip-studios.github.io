@@ -4,178 +4,676 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
   <title>AR Basketball</title>
+  <script>
+    var isAndroid = /android/i.test(navigator.userAgent);
+    if (isAndroid) {
+      var originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+      navigator.mediaDevices.getUserMedia = function(constraints) {
+        if (constraints && constraints.video) {
+          constraints.video = {
+            facingMode: 'environment',
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+          };
+        }
+        return originalGetUserMedia(constraints);
+      };
+    }
+  </script>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   <style>
-    body{margin:0;overflow:hidden;font-family:sans-serif}
-    #score{position:fixed;top:20px;left:20px;z-index:9999;color:#fff;font-size:24px;text-shadow:0 2px 4px rgba(0,0,0,0.5);pointer-events:none}
+    body{margin:0;overflow:hidden;font-family:'Helvetica Neue',Arial,sans-serif}
+    
+    /* Message overlays */
+    .message-overlay{
+      position:fixed;
+      top:0;left:0;right:0;bottom:0;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      z-index:9999;
+      pointer-events:none;
+      opacity:0;
+      transition:opacity 0.5s ease;
+    }
+    .message-overlay.visible{opacity:1}
+    .message-overlay.hidden{display:none}
+    
+    .message-box{
+      background:rgba(0,0,0,0.85);
+      padding:30px 50px;
+      border-radius:20px;
+      text-align:center;
+      max-width:80%;
+    }
+    .message-box h1{
+      color:#fff;
+      font-size:28px;
+      margin:0 0 15px 0;
+      font-weight:600;
+    }
+    .message-box p{
+      color:#ccc;
+      font-size:18px;
+      margin:0;
+    }
+    .scan-icon{
+      width:80px;
+      height:80px;
+      margin-bottom:20px;
+      animation:pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse{
+      0%,100%{transform:scale(1);opacity:1}
+      50%{transform:scale(1.1);opacity:0.7}
+    }
+    
+    /* Game HUD */
+    #game-hud{
+      position:fixed;
+      top:0;left:0;right:0;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      padding:20px;
+      z-index:9998;
+      pointer-events:none;
+      opacity:0;
+      transition:opacity 0.3s ease;
+    }
+    #game-hud.visible{opacity:1}
+    
+    #score-display{
+      background:rgba(0,0,0,0.7);
+      padding:12px 24px;
+      border-radius:12px;
+      color:#fff;
+      font-size:24px;
+      font-weight:600;
+    }
+    #timer-display{
+      background:rgba(0,0,0,0.7);
+      padding:12px 24px;
+      border-radius:12px;
+      color:#fff;
+      font-size:24px;
+      font-weight:600;
+    }
+    #timer-display.warning{color:#ff6b6b;animation:timerPulse 0.5s ease infinite}
+    @keyframes timerPulse{
+      0%,100%{transform:scale(1)}
+      50%{transform:scale(1.05)}
+    }
+    
+    /* Game Over screen */
+    #game-over{
+      position:fixed;
+      top:0;left:0;right:0;bottom:0;
+      background:rgba(0,0,0,0.9);
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      z-index:10000;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity 0.5s ease;
+    }
+    #game-over.visible{opacity:1;pointer-events:auto}
+    #game-over h1{
+      color:#fff;
+      font-size:42px;
+      margin:0 0 10px 0;
+    }
+    #game-over .final-score{
+      color:#FF6D00;
+      font-size:72px;
+      font-weight:700;
+      margin:0 0 10px 0;
+    }
+    #game-over .score-label{
+      color:#aaa;
+      font-size:20px;
+      margin:0 0 40px 0;
+    }
+    #play-again{
+      background:#FF6D00;
+      color:#fff;
+      border:none;
+      padding:18px 50px;
+      font-size:22px;
+      font-weight:600;
+      border-radius:50px;
+      cursor:pointer;
+      transition:transform 0.2s ease, background 0.2s ease;
+    }
+    #play-again:hover{background:#ff8533;transform:scale(1.05)}
+    #play-again:active{transform:scale(0.98)}
+    
+    /* Swipe zone */
     #swipe-zone{position:fixed;top:0;left:0;width:100%;height:100%;z-index:100;touch-action:none}
     .swipe-trail{position:fixed;z-index:99;pointer-events:none;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle,rgba(255,100,0,0.7),transparent);animation:trailFade .4s ease forwards}
     @keyframes trailFade{0%{opacity:.8;transform:scale(1)}100%{opacity:0;transform:scale(.2)}}
+    
+    /* Countdown overlay */
+    #countdown{
+      position:fixed;
+      top:0;left:0;right:0;bottom:0;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      z-index:9999;
+      pointer-events:none;
+      opacity:0;
+      transition:opacity 0.2s ease;
+    }
+    #countdown.visible{opacity:1}
+    #countdown span{
+      font-size:120px;
+      font-weight:700;
+      color:#fff;
+      text-shadow:0 4px 20px rgba(0,0,0,0.5);
+      animation:countPop 0.5s ease;
+    }
+    @keyframes countPop{
+      0%{transform:scale(0.5);opacity:0}
+      50%{transform:scale(1.2)}
+      100%{transform:scale(1);opacity:1}
+    }
   </style>
 </head>
 <body>
 
-<div id="score">Score: 0</div>
+<!-- Scan Logo Message -->
+<div id="scan-message" class="message-overlay visible">
+  <div class="message-box">
+    <svg class="scan-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="10" width="25" height="5" fill="white"/>
+      <rect x="10" y="10" width="5" height="25" fill="white"/>
+      <rect x="65" y="10" width="25" height="5" fill="white"/>
+      <rect x="85" y="10" width="5" height="25" fill="white"/>
+      <rect x="10" y="85" width="25" height="5" fill="white"/>
+      <rect x="10" y="65" width="5" height="25" fill="white"/>
+      <rect x="65" y="85" width="25" height="5" fill="white"/>
+      <rect x="85" y="65" width="5" height="25" fill="white"/>
+      <rect x="30" y="30" width="40" height="40" rx="5" stroke="white" stroke-width="3" fill="none"/>
+    </svg>
+    <h1>Scan the Logo</h1>
+    <p>Point your camera at the marker</p>
+  </div>
+</div>
+
+<!-- Ready Message -->
+<div id="ready-message" class="message-overlay hidden">
+  <div class="message-box">
+    <h1>🏀 Get Ready!</h1>
+    <p>Score as many baskets as possible in 30 seconds!</p>
+  </div>
+</div>
+
+<!-- Countdown -->
+<div id="countdown"></div>
+
+<!-- Game HUD -->
+<div id="game-hud">
+  <div id="score-display">Score: 0</div>
+  <div id="timer-display">0:30</div>
+</div>
+
+<!-- Game Over -->
+<div id="game-over">
+  <h1>Time's Up!</h1>
+  <p class="final-score" id="final-score">0</p>
+  <p class="score-label">baskets scored</p>
+  <button id="play-again">Play Again</button>
+</div>
+
 <div id="swipe-zone"></div>
 
-<a-scene embedded arjs="sourceType:webcam;debugUIEnabled:false;" vr-mode-ui="enabled:false" renderer="antialias:true;alpha:true;">
+<script>
+  var arjsSettings = 'sourceType:webcam;debugUIEnabled:false;';
+  if (isAndroid) {
+    arjsSettings += 'sourceWidth:640;sourceHeight:480;displayWidth:640;displayHeight:480;';
+  }
+  document.write('<a-scene embedded arjs="' + arjsSettings + '" vr-mode-ui="enabled:false" renderer="antialias:true;alpha:true;precision:mediump;">');
+</script>
+  <a-assets>
+    <a-asset-item id="hoop-model" src="basketball_hoop.glb"></a-asset-item>
+  </a-assets>
   <a-entity camera></a-entity>
   <a-marker id="hiro-marker" preset="hiro" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="2"></a-marker>
   <a-entity id="hoop-container" visible="false">
     <a-entity id="hoop-pivot" rotation="-90 0 0">
-      <a-box position="0 0.5 -0.5" width="1.5" height="1.1" depth="0.08" color="#FFFFFF" material="opacity:0.95"></a-box>
-      <a-box position="0 0.5 -0.458" width="1.54" height="1.14" depth="0.005" color="#222"></a-box>
-      <a-box position="0 0.3 -0.454" width="0.6" height="0.45" depth="0.003" color="#FF5722" material="wireframe:true"></a-box>
-      <a-box position="0 0.3 -0.455" width="0.58" height="0.43" depth="0.004" color="#FF5722" material="opacity:0.15;transparent:true"></a-box>
-      <a-torus id="rim" position="0 -0.05 0" rotation="90 0 0" radius="0.32" radius-tubular="0.028" segments-radial="24" segments-tubular="48" color="#FF3D00" material="metalness:0.85;roughness:0.2"></a-torus>
-      <a-cylinder position="-0.16 -0.05 -0.25" rotation="90 0 0" radius="0.02" height="0.5" color="#777" material="metalness:0.6"></a-cylinder>
-      <a-cylinder position="0.16 -0.05 -0.25" rotation="90 0 0" radius="0.02" height="0.5" color="#777" material="metalness:0.6"></a-cylinder>
-      <a-torus class="net-ring" id="net0" position="0 -0.10 0" rotation="90 0 0" radius="0.29" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.6;transparent:true"></a-torus>
-      <a-torus class="net-ring" id="net1" position="0 -0.18 0" rotation="90 0 0" radius="0.26" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.5;transparent:true"></a-torus>
-      <a-torus class="net-ring" id="net2" position="0 -0.26 0" rotation="90 0 0" radius="0.23" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.45;transparent:true"></a-torus>
-      <a-torus class="net-ring" id="net3" position="0 -0.34 0" rotation="90 0 0" radius="0.20" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.4;transparent:true"></a-torus>
-      <a-torus class="net-ring" id="net4" position="0 -0.42 0" rotation="90 0 0" radius="0.17" radius-tubular="0.005" color="#FFFFFF" material="opacity:0.35;transparent:true"></a-torus>
-      <a-torus class="net-ring" id="net5" position="0 -0.50 0" rotation="90 0 0" radius="0.13" radius-tubular="0.005" color="#FFFFFF" material="opacity:0.25;transparent:true"></a-torus>
+      <a-entity 
+        gltf-model="#hoop-model" 
+        position="0 0.38 -0.42"
+        rotation="0 180 0"
+        scale="0.23 0.12 0.23"
+      ></a-entity>
+      <a-torus class="net-ring" id="net0" position="0 -0.10 0" rotation="90 0 0" radius="0.29" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.5;transparent:true"></a-torus>
+      <a-torus class="net-ring" id="net1" position="0 -0.18 0" rotation="90 0 0" radius="0.26" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.45;transparent:true"></a-torus>
+      <a-torus class="net-ring" id="net2" position="0 -0.26 0" rotation="90 0 0" radius="0.23" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.4;transparent:true"></a-torus>
+      <a-torus class="net-ring" id="net3" position="0 -0.34 0" rotation="90 0 0" radius="0.20" radius-tubular="0.006" color="#FFFFFF" material="opacity:0.35;transparent:true"></a-torus>
+      <a-torus class="net-ring" id="net4" position="0 -0.42 0" rotation="90 0 0" radius="0.17" radius-tubular="0.005" color="#FFFFFF" material="opacity:0.3;transparent:true"></a-torus>
+      <a-torus class="net-ring" id="net5" position="0 -0.50 0" rotation="90 0 0" radius="0.13" radius-tubular="0.005" color="#FFFFFF" material="opacity:0.2;transparent:true"></a-torus>
     </a-entity>
   </a-entity>
 </a-scene>
 
 <script>
-var sceneEl=document.querySelector('a-scene');
-sceneEl.addEventListener('loaded',function(){
-  var GRAVITY=-9.8,BALL_R=0.16,FRICTION=0.25;
-  var NET_RINGS=[{id:'net0',oy:0,oz:0.10,or:0.29},{id:'net1',oy:0,oz:0.18,or:0.26},{id:'net2',oy:0,oz:0.26,or:0.23},{id:'net3',oy:0,oz:0.34,or:0.20},{id:'net4',oy:0,oz:0.42,or:0.17},{id:'net5',oy:0,oz:0.50,or:0.13}];
-  var netState=NET_RINGS.map(function(r){return{el:null,id:r.id,oy:r.oy,oz:r.oz,or:r.or,offsetX:0,offsetY:0,velX:0,velY:0};});
-  var C={rim:{cx:0,cy:0,cz:0.05,majorR:0.32,tubeR:0.028,bounce:0.55},backboard:{cx:0,cy:0,cz:-0.5,hw:0.75,hh:0.55,hd:0.04,bounce:0.45}};
+var sceneEl = document.querySelector('a-scene');
+sceneEl.addEventListener('loaded', function() {
+  // Game state
+  var GAME_DURATION = 30;
+  var gameState = 'scanning'; // scanning, ready, countdown, playing, ended
+  var score = 0;
+  var timeRemaining = GAME_DURATION;
+  var gameTimer = null;
+  
+  // Physics constants
+  var GRAVITY = -9.8, BALL_R = 0.16, FRICTION = 0.25;
+  var NET_RINGS = [
+    {id:'net0',oy:0,oz:0.10,or:0.29},
+    {id:'net1',oy:0,oz:0.18,or:0.26},
+    {id:'net2',oy:0,oz:0.26,or:0.23},
+    {id:'net3',oy:0,oz:0.34,or:0.20},
+    {id:'net4',oy:0,oz:0.42,or:0.17},
+    {id:'net5',oy:0,oz:0.50,or:0.13}
+  ];
+  var netState = NET_RINGS.map(function(r) {
+    return {el:null,id:r.id,oy:r.oy,oz:r.oz,or:r.or,offsetX:0,offsetY:0,velX:0,velY:0};
+  });
+  var C = {
+    rim: {cx:0,cy:0,cz:0.05,majorR:0.32,tubeR:0.028,bounce:0.55},
+    backboard: {cx:0,cy:0,cz:-0.5,hw:0.75,hh:0.55,hd:0.04,bounce:0.45}
+  };
 
-  var score=0,markerVisible=false,hoopInitialized=false,balls=[],swipeStart=null;
-  var hoopWorldMatrix=new THREE.Matrix4(),hoopWorldMatrixInverse=new THREE.Matrix4();
+  var markerVisible = false, hoopInitialized = false, balls = [], swipeStart = null;
+  var hoopWorldMatrix = new THREE.Matrix4(), hoopWorldMatrixInverse = new THREE.Matrix4();
 
-  var scoreEl=document.getElementById('score'),swipeZone=document.getElementById('swipe-zone'),markerEl=document.getElementById('hiro-marker'),hoopContainer=document.getElementById('hoop-container'),hoopPivot=document.getElementById('hoop-pivot');
+  // UI Elements
+  var scanMessage = document.getElementById('scan-message');
+  var readyMessage = document.getElementById('ready-message');
+  var countdownEl = document.getElementById('countdown');
+  var gameHud = document.getElementById('game-hud');
+  var scoreDisplay = document.getElementById('score-display');
+  var timerDisplay = document.getElementById('timer-display');
+  var gameOverScreen = document.getElementById('game-over');
+  var finalScoreEl = document.getElementById('final-score');
+  var playAgainBtn = document.getElementById('play-again');
+  var swipeZone = document.getElementById('swipe-zone');
+  
+  var markerEl = document.getElementById('hiro-marker');
+  var hoopContainer = document.getElementById('hoop-container');
+  var hoopPivot = document.getElementById('hoop-pivot');
 
-  netState.forEach(function(ns){ns.el=document.getElementById(ns.id);});
+  netState.forEach(function(ns) { ns.el = document.getElementById(ns.id); });
 
-  markerEl.addEventListener('markerFound',function(){markerVisible=true;hoopInitialized=true;hoopContainer.setAttribute('visible','true');});
-  markerEl.addEventListener('markerLost',function(){markerVisible=false;});
+  // Game flow functions
+  function showScanMessage() {
+    scanMessage.classList.remove('hidden');
+    scanMessage.classList.add('visible');
+    readyMessage.classList.add('hidden');
+    readyMessage.classList.remove('visible');
+  }
+  
+  function showReadyMessage() {
+    scanMessage.classList.remove('visible');
+    setTimeout(function() { scanMessage.classList.add('hidden'); }, 500);
+    
+    readyMessage.classList.remove('hidden');
+    setTimeout(function() { readyMessage.classList.add('visible'); }, 50);
+    
+    // Show ready message for 2 seconds, then start countdown
+    setTimeout(function() {
+      readyMessage.classList.remove('visible');
+      setTimeout(function() { readyMessage.classList.add('hidden'); }, 500);
+      startCountdown();
+    }, 2000);
+  }
+  
+  function startCountdown() {
+    gameState = 'countdown';
+    var count = 3;
+    countdownEl.classList.add('visible');
+    
+    function showCount() {
+      countdownEl.innerHTML = '<span>' + count + '</span>';
+      if (navigator.vibrate) navigator.vibrate(50);
+      
+      if (count > 0) {
+        count--;
+        setTimeout(showCount, 1000);
+      } else {
+        countdownEl.innerHTML = '<span>GO!</span>';
+        setTimeout(function() {
+          countdownEl.classList.remove('visible');
+          startGame();
+        }, 500);
+      }
+    }
+    showCount();
+  }
+  
+  function startGame() {
+    gameState = 'playing';
+    score = 0;
+    timeRemaining = GAME_DURATION;
+    
+    // Show HUD
+    gameHud.classList.add('visible');
+    updateScoreDisplay();
+    updateTimerDisplay();
+    
+    // Show hoop
+    hoopContainer.setAttribute('visible', 'true');
+    
+    // Start timer
+    gameTimer = setInterval(function() {
+      timeRemaining--;
+      updateTimerDisplay();
+      
+      if (timeRemaining <= 10) {
+        timerDisplay.classList.add('warning');
+      }
+      
+      if (timeRemaining <= 0) {
+        endGame();
+      }
+    }, 1000);
+  }
+  
+  function updateScoreDisplay() {
+    scoreDisplay.textContent = 'Score: ' + score;
+  }
+  
+  function updateTimerDisplay() {
+    var mins = Math.floor(timeRemaining / 60);
+    var secs = timeRemaining % 60;
+    timerDisplay.textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+  }
+  
+  function endGame() {
+    gameState = 'ended';
+    clearInterval(gameTimer);
+    
+    // Hide HUD
+    gameHud.classList.remove('visible');
+    timerDisplay.classList.remove('warning');
+    
+    // Show game over
+    finalScoreEl.textContent = score;
+    gameOverScreen.classList.add('visible');
+    
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
+  }
+  
+  function resetGame() {
+    gameState = 'scanning';
+    score = 0;
+    timeRemaining = GAME_DURATION;
+    
+    // Clear balls
+    balls.forEach(function(b) {
+      if (b.el && b.el.parentNode) b.el.parentNode.removeChild(b.el);
+    });
+    balls = [];
+    
+    // Hide game over
+    gameOverScreen.classList.remove('visible');
+    
+    // Hide hoop until marker found again
+    hoopContainer.setAttribute('visible', 'false');
+    hoopInitialized = false;
+    
+    // Show scan message
+    showScanMessage();
+  }
+  
+  playAgainBtn.addEventListener('click', resetGame);
 
-  function getXY(e){
-    if(e.touches&&e.touches[0])return{x:e.touches[0].clientX,y:e.touches[0].clientY};
-    if(e.changedTouches&&e.changedTouches[0])return{x:e.changedTouches[0].clientX,y:e.changedTouches[0].clientY};
-    return{x:e.clientX||0,y:e.clientY||0};
+  // Marker events
+  markerEl.addEventListener('markerFound', function() {
+    markerVisible = true;
+    hoopInitialized = true;
+    
+    if (gameState === 'scanning') {
+      gameState = 'ready';
+      showReadyMessage();
+    } else if (gameState === 'playing') {
+      hoopContainer.setAttribute('visible', 'true');
+    }
+  });
+  
+  markerEl.addEventListener('markerLost', function() {
+    markerVisible = false;
+  });
+
+  // Touch/swipe handling
+  function getXY(e) {
+    if (e.touches && e.touches[0]) return {x: e.touches[0].clientX, y: e.touches[0].clientY};
+    if (e.changedTouches && e.changedTouches[0]) return {x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY};
+    return {x: e.clientX || 0, y: e.clientY || 0};
   }
 
-  function tsS(e){
+  function tsS(e) {
+    if (gameState !== 'playing') return;
     e.preventDefault();
-    if(!hoopInitialized)return;
-    var t=getXY(e);
-    swipeStart={x:t.x,y:t.y,time:Date.now()};
+    var t = getXY(e);
+    swipeStart = {x: t.x, y: t.y, time: Date.now()};
   }
 
-  function tsM(e){
+  function tsM(e) {
+    if (gameState !== 'playing') return;
     e.preventDefault();
-    if(!swipeStart)return;
-    var t=getXY(e);
-    var tr=document.createElement('div');
-    tr.className='swipe-trail';
-    tr.style.left=(t.x-7)+'px';
-    tr.style.top=(t.y-7)+'px';
+    if (!swipeStart) return;
+    var t = getXY(e);
+    var tr = document.createElement('div');
+    tr.className = 'swipe-trail';
+    tr.style.left = (t.x - 7) + 'px';
+    tr.style.top = (t.y - 7) + 'px';
     document.body.appendChild(tr);
-    setTimeout(function(){tr.remove();},400);
+    setTimeout(function() { tr.remove(); }, 400);
   }
 
-  function tsE(e){
+  function tsE(e) {
+    if (gameState !== 'playing') return;
     e.preventDefault();
-    if(!swipeStart)return;
-    var t=getXY(e);
-    var dx=t.x-swipeStart.x,dy=t.y-swipeStart.y,dt=(Date.now()-swipeStart.time)/1000;
-    swipeStart=null;
-    if(dy>-20)return;
-    var dist=Math.sqrt(dx*dx+dy*dy),speed=dist/Math.max(dt,0.05),hBias=dx/window.innerWidth,power=Math.min(Math.max(speed/1200,0.3),1.0);
-    shoot(power,hBias);
+    if (!swipeStart) return;
+    var t = getXY(e);
+    var dx = t.x - swipeStart.x, dy = t.y - swipeStart.y, dt = (Date.now() - swipeStart.time) / 1000;
+    swipeStart = null;
+    if (dy > -20) return;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    var speed = dist / Math.max(dt, 0.05);
+    var hBias = dx / window.innerWidth;
+    var power = Math.min(Math.max(speed / 1200, 0.3), 1.0);
+    shoot(power, hBias);
   }
 
-  swipeZone.addEventListener('touchstart',tsS,{passive:false});
-  swipeZone.addEventListener('touchmove',tsM,{passive:false});
-  swipeZone.addEventListener('touchend',tsE,{passive:false});
-  swipeZone.addEventListener('mousedown',tsS);
-  swipeZone.addEventListener('mousemove',function(e){if(swipeStart)tsM(e);});
-  swipeZone.addEventListener('mouseup',tsE);
+  swipeZone.addEventListener('touchstart', tsS, {passive: false});
+  swipeZone.addEventListener('touchmove', tsM, {passive: false});
+  swipeZone.addEventListener('touchend', tsE, {passive: false});
+  swipeZone.addEventListener('mousedown', tsS);
+  swipeZone.addEventListener('mousemove', function(e) { if (swipeStart) tsM(e); });
+  swipeZone.addEventListener('mouseup', tsE);
 
-  function shoot(power,hBias){
-    if(!hoopInitialized)return;
-    var ball=document.createElement('a-sphere');
-    ball.setAttribute('radius',String(BALL_R));
-    ball.setAttribute('color','#FF6D00');
-    ball.setAttribute('material','roughness:0.55;metalness:0.1');
-    var rimLocal=new THREE.Vector3(0,0,0.05),rimW=rimLocal.clone().applyMatrix4(hoopWorldMatrix);
-    var cam=document.querySelector('[camera]').object3D,cp=new THREE.Vector3(),cd=new THREE.Vector3();
-    cam.getWorldPosition(cp);cam.getWorldDirection(cd);
-    var sp=cp.clone().add(cd.clone().multiplyScalar(0.4)).add(new THREE.Vector3(0,-0.3,0));
-    ball.setAttribute('position',sp.x+' '+sp.y+' '+sp.z);
+  function shoot(power, hBias) {
+    if (!hoopInitialized || gameState !== 'playing') return;
+    var ball = document.createElement('a-sphere');
+    ball.setAttribute('radius', String(BALL_R));
+    ball.setAttribute('color', '#FF6D00');
+    ball.setAttribute('material', 'roughness:0.55;metalness:0.1');
+    var rimLocal = new THREE.Vector3(0, 0, 0.05);
+    var rimW = rimLocal.clone().applyMatrix4(hoopWorldMatrix);
+    var cam = document.querySelector('[camera]').object3D;
+    var cp = new THREE.Vector3(), cd = new THREE.Vector3();
+    cam.getWorldPosition(cp);
+    cam.getWorldDirection(cd);
+    var sp = cp.clone().add(cd.clone().multiplyScalar(0.4)).add(new THREE.Vector3(0, -0.3, 0));
+    ball.setAttribute('position', sp.x + ' ' + sp.y + ' ' + sp.z);
     sceneEl.appendChild(ball);
-    var tp=rimW.clone(),cr=new THREE.Vector3();
-    cr.crossVectors(cd,new THREE.Vector3(0,1,0)).normalize();
-    tp.add(cr.clone().multiplyScalar(hBias*1.2));
-    var acc=0.7+power*0.3;
-    tp.add(new THREE.Vector3((Math.random()-0.5)*(1-acc)*0.8,(Math.random()-0.5)*(1-acc)*0.4,(Math.random()-0.5)*(1-acc)*0.8));
-    var d=tp.clone().sub(sp),hDist=Math.sqrt(d.x*d.x+d.z*d.z),spd=3.5+power*5,ft=hDist/spd||0.8;
-    var b={el:ball,pos:sp.clone(),vel:new THREE.Vector3(d.x/ft,(d.y-0.5*GRAVITY*ft*ft)/ft,d.z/ft),time:0,settled:false,scored:false,bounces:0,cooldowns:{},passedNetRings:new Set(),inNet:false};
+    var tp = rimW.clone();
+    var cr = new THREE.Vector3();
+    cr.crossVectors(cd, new THREE.Vector3(0, 1, 0)).normalize();
+    tp.add(cr.clone().multiplyScalar(hBias * 1.2));
+    var acc = 0.7 + power * 0.3;
+    tp.add(new THREE.Vector3(
+      (Math.random() - 0.5) * (1 - acc) * 0.8,
+      (Math.random() - 0.5) * (1 - acc) * 0.4,
+      (Math.random() - 0.5) * (1 - acc) * 0.8
+    ));
+    var d = tp.clone().sub(sp);
+    var hDist = Math.sqrt(d.x * d.x + d.z * d.z);
+    var spd = 3.5 + power * 5;
+    var ft = hDist / spd || 0.8;
+    var b = {
+      el: ball,
+      pos: sp.clone(),
+      vel: new THREE.Vector3(d.x / ft, (d.y - 0.5 * GRAVITY * ft * ft) / ft, d.z / ft),
+      time: 0,
+      settled: false,
+      scored: false,
+      bounces: 0,
+      cooldowns: {},
+      passedNetRings: new Set(),
+      inNet: false
+    };
     balls.push(b);
-    setTimeout(function(){if(ball.parentNode)ball.parentNode.removeChild(ball);var i=balls.indexOf(b);if(i>-1)balls.splice(i,1);},8000);
-    if(navigator.vibrate)navigator.vibrate(30);
+    setTimeout(function() {
+      if (ball.parentNode) ball.parentNode.removeChild(ball);
+      var i = balls.indexOf(b);
+      if (i > -1) balls.splice(i, 1);
+    }, 8000);
+    if (navigator.vibrate) navigator.vibrate(30);
   }
 
-  function w2l(v){return v.clone().applyMatrix4(hoopWorldMatrixInverse);}
-  function l2w(v){return v.clone().applyMatrix4(hoopWorldMatrix);}
-  function velW2L(v){return v.clone().applyMatrix3(new THREE.Matrix3().setFromMatrix4(hoopWorldMatrixInverse));}
-  function velL2W(v){return v.clone().applyMatrix3(new THREE.Matrix3().setFromMatrix4(hoopWorldMatrix));}
+  function w2l(v) { return v.clone().applyMatrix4(hoopWorldMatrixInverse); }
+  function l2w(v) { return v.clone().applyMatrix4(hoopWorldMatrix); }
+  function velW2L(v) { return v.clone().applyMatrix3(new THREE.Matrix3().setFromMatrix4(hoopWorldMatrixInverse)); }
+  function velL2W(v) { return v.clone().applyMatrix3(new THREE.Matrix3().setFromMatrix4(hoopWorldMatrix)); }
 
-  function reflect(vel,n,rest){var vn=vel.dot(n);if(vn>=0)return false;var vnV=n.clone().multiplyScalar(vn),vtV=vel.clone().sub(vnV);vel.copy(vtV.multiplyScalar(1-FRICTION).add(vnV.multiplyScalar(-rest)));return true;}
+  function reflect(vel, n, rest) {
+    var vn = vel.dot(n);
+    if (vn >= 0) return false;
+    var vnV = n.clone().multiplyScalar(vn);
+    var vtV = vel.clone().sub(vnV);
+    vel.copy(vtV.multiplyScalar(1 - FRICTION).add(vnV.multiplyScalar(-rest)));
+    return true;
+  }
 
-  var RIM_SAMPLES=16;
-  function hitRim(p,v,rim){
-    var cx=rim.cx,cy=rim.cy,cz=rim.cz,majorR=rim.majorR,tubeR=rim.tubeR,bounce=rim.bounce;
-    var closestDist=Infinity,closestNormal=null,closestPen=0;
-    for(var i=0;i<RIM_SAMPLES;i++){var angle=(i/RIM_SAMPLES)*Math.PI*2,ringX=cx+Math.cos(angle)*majorR,ringY=cy+Math.sin(angle)*majorR,dx=p.x-ringX,dy=p.y-ringY,dz=p.z-cz,dist=Math.sqrt(dx*dx+dy*dy+dz*dz),minDist=BALL_R+tubeR;if(dist<minDist&&dist>0.001&&dist<closestDist){closestDist=dist;closestNormal=new THREE.Vector3(dx/dist,dy/dist,dz/dist);closestPen=minDist-dist;}}
-    var dx0=p.x-cx,dy0=p.y-cy,dXY=Math.sqrt(dx0*dx0+dy0*dy0);
-    if(dXY>0.001){var rx=cx+(dx0/dXY)*majorR,ry=cy+(dy0/dXY)*majorR,tdx=p.x-rx,tdy=p.y-ry,tdz=p.z-cz,td=Math.sqrt(tdx*tdx+tdy*tdy+tdz*tdz),minD=BALL_R+tubeR;if(td<minD&&td>0.001&&td<closestDist){closestDist=td;closestNormal=new THREE.Vector3(tdx/td,tdy/td,tdz/td);closestPen=minD-td;}}
-    if(closestNormal){p.x+=closestNormal.x*closestPen;p.y+=closestNormal.y*closestPen;p.z+=closestNormal.z*closestPen;reflect(v,closestNormal,bounce);return true;}
+  var RIM_SAMPLES = 16;
+  function hitRim(p, v, rim) {
+    var cx = rim.cx, cy = rim.cy, cz = rim.cz, majorR = rim.majorR, tubeR = rim.tubeR, bounce = rim.bounce;
+    var closestDist = Infinity, closestNormal = null, closestPen = 0;
+    for (var i = 0; i < RIM_SAMPLES; i++) {
+      var angle = (i / RIM_SAMPLES) * Math.PI * 2;
+      var ringX = cx + Math.cos(angle) * majorR;
+      var ringY = cy + Math.sin(angle) * majorR;
+      var dx = p.x - ringX, dy = p.y - ringY, dz = p.z - cz;
+      var dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      var minDist = BALL_R + tubeR;
+      if (dist < minDist && dist > 0.001 && dist < closestDist) {
+        closestDist = dist;
+        closestNormal = new THREE.Vector3(dx / dist, dy / dist, dz / dist);
+        closestPen = minDist - dist;
+      }
+    }
+    var dx0 = p.x - cx, dy0 = p.y - cy, dXY = Math.sqrt(dx0 * dx0 + dy0 * dy0);
+    if (dXY > 0.001) {
+      var rx = cx + (dx0 / dXY) * majorR, ry = cy + (dy0 / dXY) * majorR;
+      var tdx = p.x - rx, tdy = p.y - ry, tdz = p.z - cz;
+      var td = Math.sqrt(tdx * tdx + tdy * tdy + tdz * tdz);
+      var minD = BALL_R + tubeR;
+      if (td < minD && td > 0.001 && td < closestDist) {
+        closestDist = td;
+        closestNormal = new THREE.Vector3(tdx / td, tdy / td, tdz / td);
+        closestPen = minD - td;
+      }
+    }
+    if (closestNormal) {
+      p.x += closestNormal.x * closestPen;
+      p.y += closestNormal.y * closestPen;
+      p.z += closestNormal.z * closestPen;
+      reflect(v, closestNormal, bounce);
+      return true;
+    }
     return false;
   }
 
-  function hitBox(p,v,b){var clx=Math.max(b.cx-b.hw,Math.min(p.x,b.cx+b.hw)),cly=Math.max(b.cy-b.hh,Math.min(p.y,b.cy+b.hh)),clz=Math.max(b.cz-b.hd,Math.min(p.z,b.cz+b.hd)),dx=p.x-clx,dy=p.y-cly,dz=p.z-clz,dist=Math.sqrt(dx*dx+dy*dy+dz*dz);if(dist<BALL_R&&dist>0.001){var n=new THREE.Vector3(dx,dy,dz).normalize(),pen=BALL_R-dist;p.x+=n.x*pen;p.y+=n.y*pen;p.z+=n.z*pen;reflect(v,n,b.bounce);return true;}return false;}
-
-  var NET_SPRING=80,NET_DAMP=8,NET_PUSH=1.2;
-  function updateNet(dt){for(var i=0;i<netState.length;i++){var ns=netState[i];if(!ns.el)continue;var ax=-NET_SPRING*ns.offsetX-NET_DAMP*ns.velX,ay=-NET_SPRING*ns.offsetY-NET_DAMP*ns.velY;ns.velX+=ax*dt;ns.velY+=ay*dt;ns.offsetX+=ns.velX*dt;ns.offsetY+=ns.velY*dt;ns.offsetX=Math.max(-0.15,Math.min(0.15,ns.offsetX));ns.offsetY=Math.max(-0.15,Math.min(0.15,ns.offsetY));ns.el.setAttribute('position',ns.offsetX.toFixed(4)+' '+(-ns.oz+ns.offsetY).toFixed(4)+' 0');}}
-
-  function pushNetRing(idx,lp,lv){var ns=netState[idx];if(!ns)return;ns.velX+=(lp.x*NET_PUSH+lv.x*0.05)*15;ns.velY+=((lp.y)*NET_PUSH+lv.y*0.05)*15;}
-
-  function checkNetPassThrough(b,lp,lv){
-    for(var i=0;i<NET_RINGS.length;i++){
-      if(b.passedNetRings.has(i))continue;
-      var ring=NET_RINGS[i],dxR=lp.x-C.rim.cx,dyR=lp.y-C.rim.cy,distFromCenter=Math.sqrt(dxR*dxR+dyR*dyR);
-      if(distFromCenter<ring.or+BALL_R*0.5&&lp.z>ring.oz-BALL_R&&lp.z<ring.oz+BALL_R*2&&lv.z>0){
-        b.passedNetRings.add(i);
-        pushNetRing(i,lp,lv);
-        lv.x*=0.92;lv.y*=0.92;lv.z*=0.95;
-        b.inNet=true;
-      }
+  function hitBox(p, v, b) {
+    var clx = Math.max(b.cx - b.hw, Math.min(p.x, b.cx + b.hw));
+    var cly = Math.max(b.cy - b.hh, Math.min(p.y, b.cy + b.hh));
+    var clz = Math.max(b.cz - b.hd, Math.min(p.z, b.cz + b.hd));
+    var dx = p.x - clx, dy = p.y - cly, dz = p.z - clz;
+    var dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    if (dist < BALL_R && dist > 0.001) {
+      var n = new THREE.Vector3(dx, dy, dz).normalize();
+      var pen = BALL_R - dist;
+      p.x += n.x * pen;
+      p.y += n.y * pen;
+      p.z += n.z * pen;
+      reflect(v, n, b.bounce);
+      return true;
     }
-    if(!b.scored&&b.passedNetRings.size>=3&&lv.z>0){
-      b.scored=true;
-      score++;
-      scoreEl.textContent='Score: '+score;
-      if(navigator.vibrate)navigator.vibrate([50,30,80]);
+    return false;
+  }
+
+  var NET_SPRING = 80, NET_DAMP = 8, NET_PUSH = 1.2;
+  function updateNet(dt) {
+    for (var i = 0; i < netState.length; i++) {
+      var ns = netState[i];
+      if (!ns.el) continue;
+      var ax = -NET_SPRING * ns.offsetX - NET_DAMP * ns.velX;
+      var ay = -NET_SPRING * ns.offsetY - NET_DAMP * ns.velY;
+      ns.velX += ax * dt;
+      ns.velY += ay * dt;
+      ns.offsetX += ns.velX * dt;
+      ns.offsetY += ns.velY * dt;
+      ns.offsetX = Math.max(-0.15, Math.min(0.15, ns.offsetX));
+      ns.offsetY = Math.max(-0.15, Math.min(0.15, ns.offsetY));
+      ns.el.setAttribute('position', ns.offsetX.toFixed(4) + ' ' + (-ns.oz + ns.offsetY).toFixed(4) + ' 0');
     }
   }
 
-  var lt=performance.now();
-  function loop(now){
-    var dt=Math.min((now-lt)/1000,0.05);
-    lt=now;
-    if(markerVisible){
-      var markerObj=markerEl.object3D;
+  function pushNetRing(idx, lp, lv) {
+    var ns = netState[idx];
+    if (!ns) return;
+    ns.velX += (lp.x * NET_PUSH + lv.x * 0.05) * 15;
+    ns.velY += (lp.y * NET_PUSH + lv.y * 0.05) * 15;
+  }
+
+  function checkNetPassThrough(b, lp, lv) {
+    for (var i = 0; i < NET_RINGS.length; i++) {
+      if (b.passedNetRings.has(i)) continue;
+      var ring = NET_RINGS[i];
+      var dxR = lp.x - C.rim.cx, dyR = lp.y - C.rim.cy;
+      var distFromCenter = Math.sqrt(dxR * dxR + dyR * dyR);
+      if (distFromCenter < ring.or + BALL_R * 0.5 && lp.z > ring.oz - BALL_R && lp.z < ring.oz + BALL_R * 2 && lv.z > 0) {
+        b.passedNetRings.add(i);
+        pushNetRing(i, lp, lv);
+        lv.x *= 0.92;
+        lv.y *= 0.92;
+        lv.z *= 0.95;
+        b.inNet = true;
+      }
+    }
+    if (!b.scored && b.passedNetRings.size >= 3 && lv.z > 0) {
+      b.scored = true;
+      score++;
+      updateScoreDisplay();
+      if (navigator.vibrate) navigator.vibrate([50, 30, 80]);
+    }
+  }
+
+  var lt = performance.now();
+  function loop(now) {
+    var dt = Math.min((now - lt) / 1000, 0.05);
+    lt = now;
+    if (markerVisible) {
+      var markerObj = markerEl.object3D;
       markerObj.updateMatrixWorld(true);
       hoopPivot.object3D.updateMatrixWorld(true);
       hoopWorldMatrix.copy(hoopPivot.object3D.matrixWorld);
@@ -185,21 +683,37 @@ sceneEl.addEventListener('loaded',function(){
       hoopContainer.object3D.scale.setFromMatrixScale(markerObj.matrixWorld);
     }
     updateNet(dt);
-    if(!hoopInitialized){requestAnimationFrame(loop);return;}
-    for(var j=0;j<balls.length;j++){
-      var b=balls[j];
-      if(b.settled)continue;
-      b.vel.y+=GRAVITY*dt;b.pos.x+=b.vel.x*dt;b.pos.y+=b.vel.y*dt;b.pos.z+=b.vel.z*dt;
-      var lp=w2l(b.pos),lv=velW2L(b.vel),ms=Date.now();
-      if(!b.cooldowns.rim||ms-b.cooldowns.rim>80){if(hitRim(lp,lv,C.rim)){b.bounces++;b.cooldowns.rim=ms;if(navigator.vibrate)navigator.vibrate(15);}}
-      if(!b.cooldowns.bb||ms-b.cooldowns.bb>120){if(hitBox(lp,lv,C.backboard)){b.bounces++;b.cooldowns.bb=ms;if(navigator.vibrate)navigator.vibrate(15);}}
-      checkNetPassThrough(b,lp,lv);
-      b.pos.copy(l2w(lp));b.vel.copy(velL2W(lv));
-      b.el.setAttribute('position',b.pos.x+' '+b.pos.y+' '+b.pos.z);
-      b.time+=dt;
-      var spin=b.inNet?50:400;
-      b.el.setAttribute('rotation',(b.time*spin)+' '+(b.time*spin*0.3)+' 0');
-      if(b.pos.y<-10)b.settled=true;
+    if (!hoopInitialized || gameState !== 'playing') { requestAnimationFrame(loop); return; }
+    for (var j = 0; j < balls.length; j++) {
+      var b = balls[j];
+      if (b.settled) continue;
+      b.vel.y += GRAVITY * dt;
+      b.pos.x += b.vel.x * dt;
+      b.pos.y += b.vel.y * dt;
+      b.pos.z += b.vel.z * dt;
+      var lp = w2l(b.pos), lv = velW2L(b.vel), ms = Date.now();
+      if (!b.cooldowns.rim || ms - b.cooldowns.rim > 80) {
+        if (hitRim(lp, lv, C.rim)) {
+          b.bounces++;
+          b.cooldowns.rim = ms;
+          if (navigator.vibrate) navigator.vibrate(15);
+        }
+      }
+      if (!b.cooldowns.bb || ms - b.cooldowns.bb > 120) {
+        if (hitBox(lp, lv, C.backboard)) {
+          b.bounces++;
+          b.cooldowns.bb = ms;
+          if (navigator.vibrate) navigator.vibrate(15);
+        }
+      }
+      checkNetPassThrough(b, lp, lv);
+      b.pos.copy(l2w(lp));
+      b.vel.copy(velL2W(lv));
+      b.el.setAttribute('position', b.pos.x + ' ' + b.pos.y + ' ' + b.pos.z);
+      b.time += dt;
+      var spin = b.inNet ? 50 : 400;
+      b.el.setAttribute('rotation', (b.time * spin) + ' ' + (b.time * spin * 0.3) + ' 0');
+      if (b.pos.y < -10) b.settled = true;
     }
     requestAnimationFrame(loop);
   }
