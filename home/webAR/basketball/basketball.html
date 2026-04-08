@@ -81,7 +81,7 @@
 <div id="ready-message" class="message-overlay hidden">
   <div class="message-box">
     <h1>🏀 Get Ready!</h1>
-    <p>Swipe UP to shoot! Power matters!</p>
+    <p>Score as many baskets as possible in 30 seconds!</p>
   </div>
 </div>
 
@@ -277,15 +277,9 @@ sceneEl.addEventListener('loaded', function() {
     var dx = t.x - swipeStart.x, dy = t.y - swipeStart.y;
     swipeStart = null;
     if (dy > -30) return;
-    
-    // Power from vertical swipe (0 to 1)
     var power = Math.min(Math.max(-dy / 300, 0.1), 1.0);
-    
-    // Curve from horizontal swipe (-1 to 1)
-    var curve = -dx / (window.innerWidth * 0.5);
-    curve = Math.max(-1, Math.min(1, curve));
-    
-    shoot(power, curve);
+    var hBias = -dx / window.innerWidth;
+    shoot(power, hBias);
   }
 
   swipeZone.addEventListener('touchstart', tsS, {passive: false});
@@ -295,7 +289,7 @@ sceneEl.addEventListener('loaded', function() {
   swipeZone.addEventListener('mousemove', function(e) { if (swipeStart) tsM(e); });
   swipeZone.addEventListener('mouseup', tsE);
 
-  function shoot(power, curve) {
+  function shoot(power, hBias) {
     if (!hoopInitialized || gameState !== 'playing') return;
     var ball = document.createElement('a-sphere');
     ball.setAttribute('radius', String(BALL_R));
@@ -306,48 +300,28 @@ sceneEl.addEventListener('loaded', function() {
     var cp = new THREE.Vector3(), cd = new THREE.Vector3();
     cam.getWorldPosition(cp); cam.getWorldDirection(cd);
     
-    // Ball starts in front of camera, slightly below
     var sp = cp.clone().add(cd.clone().multiplyScalar(0.3)).add(new THREE.Vector3(0, -0.25, 0));
     ball.setAttribute('position', sp.x + ' ' + sp.y + ' ' + sp.z);
     sceneEl.appendChild(ball);
     
-    // === SHOOTING LOGIC ===
-    // Ball ALWAYS aims at the hoop
-    // Power controls how far: 0.5 = perfect, <0.5 = short, >0.5 = overshoot
-    // Curve adds sideways deflection
-    
+    var baseSpeed = 4.0, maxSpeed = 11.0;
+    var speed = baseSpeed + power * (maxSpeed - baseSpeed);
     var toRim = rimWorldPos.clone().sub(sp);
+    var arcHeight = 0.3 + power * 0.7;
+    var hDist = Math.sqrt(toRim.x * toRim.x + toRim.z * toRim.z);
+    var flightTime = hDist / (speed * 0.7);
     
-    // Power affects distance multiplier
-    // power 0.5 = exactly at rim (1.0x)
-    // power 0.0 = falls short (0.7x)
-    // power 1.0 = overshoots (1.3x)
-    var distanceMultiplier = 0.7 + power * 0.6;
+    var vx = toRim.x / flightTime;
+    var vz = toRim.z / flightTime;
+    var vy = (toRim.y / flightTime) - (0.5 * GRAVITY * flightTime * arcHeight);
     
-    var targetPoint = sp.clone().add(toRim.clone().multiplyScalar(distanceMultiplier));
-    var toTarget = targetPoint.clone().sub(sp);
-    
-    var horizDist = Math.sqrt(toTarget.x * toTarget.x + toTarget.z * toTarget.z);
-    var heightDiff = toTarget.y;
-    
-    // Flight time - consistent arc
-    var flightTime = 0.75;
-    
-    // Horizontal velocity toward target
-    var vx = toTarget.x / flightTime;
-    var vz = toTarget.z / flightTime;
-    
-    // Vertical velocity for nice arc
-    // Using kinematic equation: y = vy*t + 0.5*g*t^2
-    // We want ball to arc up then come down through hoop
-    var arcBoost = 2.5; // Extra upward velocity for arc
-    var vy = (heightDiff - 0.5 * GRAVITY * flightTime * flightTime) / flightTime + arcBoost;
-    
-    // Add curve (sideways deflection)
     var right = new THREE.Vector3();
-    right.crossVectors(toRim.normalize(), new THREE.Vector3(0, 1, 0)).normalize();
-    vx += right.x * curve * 2.0;
-    vz += right.z * curve * 2.0;
+    right.crossVectors(cd, new THREE.Vector3(0, 1, 0)).normalize();
+    vx += right.x * hBias * 3;
+    vz += right.z * hBias * 3;
+    
+    var powerScale = 0.5 + power * 0.7;
+    vx *= powerScale; vy *= powerScale; vz *= powerScale;
     
     var b = {
       el: ball, pos: sp.clone(), vel: new THREE.Vector3(vx, vy, vz),
