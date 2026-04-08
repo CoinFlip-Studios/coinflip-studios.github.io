@@ -304,24 +304,29 @@ sceneEl.addEventListener('loaded', function() {
     ball.setAttribute('position', sp.x + ' ' + sp.y + ' ' + sp.z);
     sceneEl.appendChild(ball);
     
-    var baseSpeed = 4.0, maxSpeed = 11.0;
-    var speed = baseSpeed + power * (maxSpeed - baseSpeed);
+    // Use power to control flight time (arc height). Lower power = faster/flatter, higher = slower/higher arc.
+    // We solve for velocity that lands exactly on the rim.
     var toRim = rimWorldPos.clone().sub(sp);
-    var arcHeight = 0.3 + power * 0.7;
     var hDist = Math.sqrt(toRim.x * toRim.x + toRim.z * toRim.z);
-    var flightTime = hDist / (speed * 0.7);
     
+    // Flight time: shorter = flatter shot, longer = higher arc
+    var minTime = 0.45, maxTime = 1.0;
+    var flightTime = minTime + power * (maxTime - minTime);
+    // Ensure a minimum flight time relative to distance
+    var minPhysicsTime = hDist / 12;
+    if (flightTime < minPhysicsTime) flightTime = minPhysicsTime;
+    
+    // Horizontal velocity to cover exact horizontal distance in flightTime
     var vx = toRim.x / flightTime;
     var vz = toRim.z / flightTime;
-    var vy = (toRim.y / flightTime) - (0.5 * GRAVITY * flightTime * arcHeight);
+    // Vertical velocity solved from kinematic eq: y = vy*t + 0.5*g*t^2 => vy = (dy - 0.5*g*t^2)/t
+    var vy = (toRim.y - 0.5 * GRAVITY * flightTime * flightTime) / flightTime;
     
+    // Add horizontal bias from swipe direction
     var right = new THREE.Vector3();
     right.crossVectors(cd, new THREE.Vector3(0, 1, 0)).normalize();
-    vx += right.x * hBias * 3;
-    vz += right.z * hBias * 3;
-    
-    var powerScale = 0.5 + power * 0.7;
-    vx *= powerScale; vy *= powerScale; vz *= powerScale;
+    vx += right.x * hBias * 2.5;
+    vz += right.z * hBias * 2.5;
     
     var b = {
       el: ball, pos: sp.clone(), vel: new THREE.Vector3(vx, vy, vz),
