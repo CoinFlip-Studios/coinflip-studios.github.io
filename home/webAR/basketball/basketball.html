@@ -81,7 +81,7 @@
 <div id="ready-message" class="message-overlay hidden">
   <div class="message-box">
     <h1>🏀 Get Ready!</h1>
-    <p>Score as many baskets as possible in 30 seconds!</p>
+    <p>Swipe UP to shoot! Power matters!</p>
   </div>
 </div>
 
@@ -107,13 +107,14 @@
   <a-marker id="hiro-marker" preset="hiro" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="2"></a-marker>
   <a-entity id="hoop-container" visible="false">
     <a-entity id="hoop-pivot" rotation="-90 0 0">
-      <!-- Backboard positioned further back -->
-      <a-box position="0 0.5 -0.6" width="1.5" height="1.1" depth="0.1" color="#FFFFFF" material="opacity:0.95;side:double"></a-box>
+      <!-- Backboard -->
+      <a-box id="backboard-visual" position="0 0.5 -0.6" width="1.5" height="1.1" depth="0.1" color="#FFFFFF" material="opacity:0.95;side:double"></a-box>
       <a-box position="0 0.5 -0.545" width="1.54" height="1.14" depth="0.005" color="#222" material="side:double"></a-box>
       <!-- Target square -->
       <a-box position="0 0.3 -0.54" width="0.6" height="0.45" depth="0.003" color="#FF5722" material="wireframe:true"></a-box>
-      <!-- GLB Rim with Net - rotated to face player -->
+      <!-- GLB Rim with Net -->
       <a-entity 
+        id="rim-model"
         gltf-model="#hoop-model" 
         position="0 0 0.05"
         rotation="0 90 0"
@@ -131,18 +132,17 @@ sceneEl.addEventListener('loaded', function() {
   var hoopOffset = new THREE.Vector3(0, 0, 0);
   var GRAVITY = -9.8, BALL_R = 0.12, FRICTION = 0.3;
   
-  // Collision - backboard moved back to z=-0.6
   var C = {
-    rim: {cx:0, cy:0, cz:0.05, majorR:0.32, tubeR:0.028, bounce:0.6},
-    backboard: {cx:0, cy:0.5, cz:-0.6, hw:0.75, hh:0.55, hd:0.05, bounce:0.5}
+    rim: {cx:0, cy:0, cz:0.05, majorR:0.30, tubeR:0.025, bounce:0.5},
+    backboard: {cx:0, cy:0.5, cz:-0.6, hw:0.75, hh:0.55, hd:0.05, bounce:0.4}
   };
   
-  // Scoring zone - center of rim with generous radius
-  var SCORE_ZONE = {cx:0, cy:0, cz:0.05, radius:0.25};
+  var RIM_SCORE_RADIUS = 0.22;
 
   var markerVisible = false, hoopInitialized = false, balls = [], swipeStart = null;
   var hoopWorldMatrix = new THREE.Matrix4(), hoopWorldMatrixInverse = new THREE.Matrix4();
   var baseHoopPosition = new THREE.Vector3(), baseHoopQuaternion = new THREE.Quaternion(), baseHoopScale = new THREE.Vector3(1,1,1);
+  var rimWorldPos = new THREE.Vector3();
 
   var scanMessage = document.getElementById('scan-message');
   var readyMessage = document.getElementById('ready-message');
@@ -277,9 +277,15 @@ sceneEl.addEventListener('loaded', function() {
     var dx = t.x - swipeStart.x, dy = t.y - swipeStart.y;
     swipeStart = null;
     if (dy > -30) return;
+    
+    // Power from vertical swipe (0 to 1)
     var power = Math.min(Math.max(-dy / 300, 0.1), 1.0);
-    var hBias = -dx / window.innerWidth;
-    shoot(power, hBias);
+    
+    // Curve from horizontal swipe (-1 to 1)
+    var curve = -dx / (window.innerWidth * 0.5);
+    curve = Math.max(-1, Math.min(1, curve));
+    
+    shoot(power, curve);
   }
 
   swipeZone.addEventListener('touchstart', tsS, {passive: false});
@@ -289,7 +295,7 @@ sceneEl.addEventListener('loaded', function() {
   swipeZone.addEventListener('mousemove', function(e) { if (swipeStart) tsM(e); });
   swipeZone.addEventListener('mouseup', tsE);
 
-  function shoot(power, hBias) {
+  function shoot(power, curve) {
     if (!hoopInitialized || gameState !== 'playing') return;
     var ball = document.createElement('a-sphere');
     ball.setAttribute('radius', String(BALL_R));
@@ -300,36 +306,53 @@ sceneEl.addEventListener('loaded', function() {
     var cp = new THREE.Vector3(), cd = new THREE.Vector3();
     cam.getWorldPosition(cp); cam.getWorldDirection(cd);
     
+    // Ball starts in front of camera, slightly below
     var sp = cp.clone().add(cd.clone().multiplyScalar(0.3)).add(new THREE.Vector3(0, -0.25, 0));
     ball.setAttribute('position', sp.x + ' ' + sp.y + ' ' + sp.z);
     sceneEl.appendChild(ball);
     
-    var rimLocal = new THREE.Vector3(0, 0, 0.05);
-    var rimW = rimLocal.clone().applyMatrix4(hoopWorldMatrix);
+    // === SHOOTING LOGIC ===
+    // Ball ALWAYS aims at the hoop
+    // Power controls how far: 0.5 = perfect, <0.5 = short, >0.5 = overshoot
+    // Curve adds sideways deflection
     
-    var baseSpeed = 4.0, maxSpeed = 12.0;
-    var speed = baseSpeed + power * (maxSpeed - baseSpeed);
-    var toRim = rimW.clone().sub(sp);
-    var arcHeight = 0.3 + power * 0.7;
-    var hDist = Math.sqrt(toRim.x * toRim.x + toRim.z * toRim.z);
-    var flightTime = hDist / (speed * 0.7);
+    var toRim = rimWorldPos.clone().sub(sp);
     
-    var vx = toRim.x / flightTime;
-    var vz = toRim.z / flightTime;
-    var vy = (toRim.y / flightTime) - (0.5 * GRAVITY * flightTime * arcHeight);
+    // Power affects distance multiplier
+    // power 0.5 = exactly at rim (1.0x)
+    // power 0.0 = falls short (0.7x)
+    // power 1.0 = overshoots (1.3x)
+    var distanceMultiplier = 0.7 + power * 0.6;
     
+    var targetPoint = sp.clone().add(toRim.clone().multiplyScalar(distanceMultiplier));
+    var toTarget = targetPoint.clone().sub(sp);
+    
+    var horizDist = Math.sqrt(toTarget.x * toTarget.x + toTarget.z * toTarget.z);
+    var heightDiff = toTarget.y;
+    
+    // Flight time - consistent arc
+    var flightTime = 0.75;
+    
+    // Horizontal velocity toward target
+    var vx = toTarget.x / flightTime;
+    var vz = toTarget.z / flightTime;
+    
+    // Vertical velocity for nice arc
+    // Using kinematic equation: y = vy*t + 0.5*g*t^2
+    // We want ball to arc up then come down through hoop
+    var arcBoost = 2.5; // Extra upward velocity for arc
+    var vy = (heightDiff - 0.5 * GRAVITY * flightTime * flightTime) / flightTime + arcBoost;
+    
+    // Add curve (sideways deflection)
     var right = new THREE.Vector3();
-    right.crossVectors(cd, new THREE.Vector3(0, 1, 0)).normalize();
-    vx += right.x * hBias * 3;
-    vz += right.z * hBias * 3;
-    
-    var powerScale = 0.5 + power * 0.7;
-    vx *= powerScale; vy *= powerScale; vz *= powerScale;
+    right.crossVectors(toRim.normalize(), new THREE.Vector3(0, 1, 0)).normalize();
+    vx += right.x * curve * 2.0;
+    vz += right.z * curve * 2.0;
     
     var b = {
       el: ball, pos: sp.clone(), vel: new THREE.Vector3(vx, vy, vz),
       time: 0, settled: false, scored: false, bounces: 0, cooldowns: {},
-      enteredScoreZone: false
+      prevY: sp.y
     };
     balls.push(b);
     
@@ -356,7 +379,7 @@ sceneEl.addEventListener('loaded', function() {
     return true;
   }
 
-  var RIM_SAMPLES = 16;
+  var RIM_SAMPLES = 20;
   function hitRim(p, v, rim) {
     var cx = rim.cx, cy = rim.cy, cz = rim.cz, majorR = rim.majorR, tubeR = rim.tubeR, bounce = rim.bounce;
     var closestDist = Infinity, closestNormal = null, closestPen = 0;
@@ -395,25 +418,33 @@ sceneEl.addEventListener('loaded', function() {
     return false;
   }
 
-  // Simple scoring: if ball enters center of rim area (within radius) while moving forward
-  function checkScore(b, lp, lv) {
-    var sz = SCORE_ZONE;
-    var dx = lp.x - sz.cx;
-    var dy = lp.y - sz.cy;
-    var distFromCenter = Math.sqrt(dx * dx + dy * dy);
+  function checkScoreWorld(b) {
+    if (b.scored) return;
     
-    // Ball is within scoring zone radius and near rim z position
-    var nearRimZ = Math.abs(lp.z - sz.cz) < 0.15;
-    var withinRadius = distFromCenter < sz.radius;
-    var movingForward = lv.z > 0;
+    var rimY = rimWorldPos.y;
+    var prevY = b.prevY;
+    var currY = b.pos.y;
     
-    if (!b.scored && withinRadius && nearRimZ && movingForward) {
-      b.scored = true;
-      score++;
-      updateScoreDisplay();
-      showScorePopup();
-      if (navigator.vibrate) navigator.vibrate([50, 30, 80]);
+    if (b.vel.y >= 0) {
+      b.prevY = currY;
+      return;
     }
+    
+    if (prevY > rimY && currY <= rimY) {
+      var dx = b.pos.x - rimWorldPos.x;
+      var dz = b.pos.z - rimWorldPos.z;
+      var horizDist = Math.sqrt(dx * dx + dz * dz);
+      
+      if (horizDist < RIM_SCORE_RADIUS) {
+        b.scored = true;
+        score++;
+        updateScoreDisplay();
+        showScorePopup();
+        if (navigator.vibrate) navigator.vibrate([50, 30, 80]);
+      }
+    }
+    
+    b.prevY = currY;
   }
 
   var lt = performance.now();
@@ -448,11 +479,15 @@ sceneEl.addEventListener('loaded', function() {
     hoopWorldMatrix.copy(hoopPivot.object3D.matrixWorld);
     hoopWorldMatrixInverse.copy(hoopWorldMatrix).invert();
     
+    var rimLocal = new THREE.Vector3(0, 0, 0.05);
+    rimWorldPos.copy(rimLocal.applyMatrix4(hoopWorldMatrix));
+    
     if (!hoopInitialized || gameState !== 'playing') { requestAnimationFrame(loop); return; }
     
     for (var j = 0; j < balls.length; j++) {
       var b = balls[j];
       if (b.settled) continue;
+      
       b.vel.y += GRAVITY * dt;
       b.pos.x += b.vel.x * dt;
       b.pos.y += b.vel.y * dt;
@@ -467,10 +502,11 @@ sceneEl.addEventListener('loaded', function() {
         if (hitBox(lp, lv, C.backboard)) { b.bounces++; b.cooldowns.bb = ms; if (navigator.vibrate) navigator.vibrate(25); }
       }
       
-      checkScore(b, lp, lv);
-      
       b.pos.copy(l2w(lp));
       b.vel.copy(velL2W(lv));
+      
+      checkScoreWorld(b);
+      
       b.el.setAttribute('position', b.pos.x + ' ' + b.pos.y + ' ' + b.pos.z);
       b.time += dt;
       var spin = b.scored ? 50 : 400;
