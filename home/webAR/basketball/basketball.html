@@ -73,7 +73,7 @@
       <rect x="65" y="85" width="25" height="5" fill="white"/><rect x="85" y="65" width="5" height="25" fill="white"/>
       <rect x="30" y="30" width="40" height="40" rx="5" stroke="white" stroke-width="3" fill="none"/>
     </svg>
-    <h1>Scan the Hiro Marker</h1>
+    <h1>Scan the Marker</h1>
     <p>Point your camera at the marker</p>
   </div>
 </div>
@@ -102,16 +102,18 @@
 </script>
   <a-assets timeout="10000">
     <a-asset-item id="hoop-model" src="basketball_hoop.glb"></a-asset-item>
+    <img id="backboard-logo" src="backboard-logo.jpg">
   </a-assets>
   <a-entity camera></a-entity>
-  <a-marker id="hiro-marker" preset="hiro" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="2"></a-marker>
+  <a-marker id="ic-marker" type="pattern" url="ic-marker.patt" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="2"></a-marker>
   <a-entity id="hoop-container" visible="false">
     <a-entity id="hoop-pivot" rotation="-90 0 0">
-      <!-- Backboard -->
-      <a-box id="backboard-visual" position="0 0.5 -0.6" width="1.5" height="1.1" depth="0.1" color="#FFFFFF" material="opacity:0.95;side:double"></a-box>
-      <a-box position="0 0.5 -0.545" width="1.54" height="1.14" depth="0.005" color="#222" material="side:double"></a-box>
-      <!-- Target square -->
-      <a-box position="0 0.3 -0.54" src="/home/webAR/assets/branding/Insert Coin Logo - Dark Backgrounds.png" width="0.6" height="0.45" depth="0.003" color="#000000" material="wireframe:true"></a-box>
+      <!-- Backboard backing (black, slightly larger than logo to form a thin bezel) -->
+      <a-box id="backboard-visual" position="0 0.5 -0.6" width="1.55" height="1.15" depth="0.1" color="#000000" material="side:double"></a-box>
+      <!-- Cyan neon trim glowing behind the logo -->
+      <a-plane position="0 0.5 -0.535" width="1.58" height="1.18" rotation="0 0 0" color="#5DDEFF" material="shader:flat;side:double"></a-plane>
+      <!-- INSERT COIN logo as the backboard face -->
+      <a-plane position="0 0.5 -0.525" width="1.5" height="1.1" rotation="0 0 0" material="src:#backboard-logo;shader:flat;side:double;transparent:false"></a-plane>
       <!-- GLB Rim with Net -->
       <a-entity 
         id="rim-model"
@@ -134,7 +136,7 @@ sceneEl.addEventListener('loaded', function() {
   
   var C = {
     rim: {cx:0, cy:0, cz:0.05, majorR:0.30, tubeR:0.025, bounce:0.5},
-    backboard: {cx:0, cy:0.5, cz:-0.6, hw:0.75, hh:0.55, hd:0.05, bounce:0.4}
+    backboard: {cx:0, cy:0.5, cz:-0.6, hw:0.775, hh:0.575, hd:0.075, bounce:0.4}
   };
   
   var RIM_SCORE_RADIUS = 0.22;
@@ -158,7 +160,7 @@ sceneEl.addEventListener('loaded', function() {
   var finalScoreEl = document.getElementById('final-score');
   var playAgainBtn = document.getElementById('play-again');
   var swipeZone = document.getElementById('swipe-zone');
-  var markerEl = document.getElementById('hiro-marker');
+  var markerEl = document.getElementById('ic-marker');
   var hoopContainer = document.getElementById('hoop-container');
   var hoopPivot = document.getElementById('hoop-pivot');
 
@@ -184,10 +186,16 @@ sceneEl.addEventListener('loaded', function() {
     var count = 3;
     countdownEl.classList.add('visible');
     function showCount() {
-      countdownEl.innerHTML = '<span>' + count + '</span>';
-      if (navigator.vibrate) navigator.vibrate(50);
-      if (count > 0) { count--; setTimeout(showCount, 1000); }
-      else { countdownEl.innerHTML = '<span>GO!</span>'; setTimeout(function() { countdownEl.classList.remove('visible'); startGame(); }, 500); }
+      if (count > 0) {
+        countdownEl.innerHTML = '<span>' + count + '</span>';
+        if (navigator.vibrate) navigator.vibrate(50);
+        count--;
+        setTimeout(showCount, 1000);
+      } else {
+        countdownEl.innerHTML = '<span>GO!</span>';
+        if (navigator.vibrate) navigator.vibrate(80);
+        setTimeout(function() { countdownEl.classList.remove('visible'); startGame(); }, 500);
+      }
     }
     showCount();
   }
@@ -304,29 +312,24 @@ sceneEl.addEventListener('loaded', function() {
     ball.setAttribute('position', sp.x + ' ' + sp.y + ' ' + sp.z);
     sceneEl.appendChild(ball);
     
-    // Use power to control flight time (arc height). Lower power = faster/flatter, higher = slower/higher arc.
-    // We solve for velocity that lands exactly on the rim.
+    var baseSpeed = 4.0, maxSpeed = 11.0;
+    var speed = baseSpeed + power * (maxSpeed - baseSpeed);
     var toRim = rimWorldPos.clone().sub(sp);
+    var arcHeight = 0.3 + power * 0.7;
     var hDist = Math.sqrt(toRim.x * toRim.x + toRim.z * toRim.z);
+    var flightTime = hDist / (speed * 0.7);
     
-    // Flight time: shorter = flatter shot, longer = higher arc
-    var minTime = 0.45, maxTime = 1.0;
-    var flightTime = minTime + power * (maxTime - minTime);
-    // Ensure a minimum flight time relative to distance
-    var minPhysicsTime = hDist / 12;
-    if (flightTime < minPhysicsTime) flightTime = minPhysicsTime;
-    
-    // Horizontal velocity to cover exact horizontal distance in flightTime
     var vx = toRim.x / flightTime;
     var vz = toRim.z / flightTime;
-    // Vertical velocity solved from kinematic eq: y = vy*t + 0.5*g*t^2 => vy = (dy - 0.5*g*t^2)/t
-    var vy = (toRim.y - 0.5 * GRAVITY * flightTime * flightTime) / flightTime;
+    var vy = (toRim.y / flightTime) - (0.5 * GRAVITY * flightTime * arcHeight);
     
-    // Add horizontal bias from swipe direction
     var right = new THREE.Vector3();
     right.crossVectors(cd, new THREE.Vector3(0, 1, 0)).normalize();
-    vx += right.x * hBias * 2.5;
-    vz += right.z * hBias * 2.5;
+    vx += right.x * hBias * 3;
+    vz += right.z * hBias * 3;
+    
+    var powerScale = 0.5 + power * 0.7;
+    vx *= powerScale; vy *= powerScale; vz *= powerScale;
     
     var b = {
       el: ball, pos: sp.clone(), vel: new THREE.Vector3(vx, vy, vz),
