@@ -1,10 +1,10 @@
 {
   "type": "PLANAR",
   "properties": {
-    "top": 0,
-    "left": 339,
-    "width": 2034,
-    "height": 2712,
+    "top": 442,
+    "left": 671,
+    "width": 1370,
+    "height": 1827,
     "isRotated": false,
     "originalWidth": 2712,
     "originalHeight": 2712
@@ -19,5 +19,5 @@
     "luminanceImage": "ic-marker_luminance.jpg"
   },
   "created": 1778053526054,
-  "updated": 1778053526054
+  "updated": 1778150067540
 }
