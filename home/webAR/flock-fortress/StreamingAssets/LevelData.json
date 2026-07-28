@@ -1,174 +1,430 @@
 {
-  "levels": [
+  "worlds": [
     {
-      "levelId": 1,
-      "levelName": "Graveyard",
-      "totalWaves": 3,
-      "waves": [
+      "worldId": 1,
+      "worldName": "Graveyard",
+      "levels": [
         {
-          "waveNumber": 1,
-          "spawnDelay": 0.5,
-          "enemies": [
+          "levelId": "1-1",
+          "levelName": "Level 1",
+          "totalWaves": 1,
+          "waves": [
             {
-              "type": "Runner",
-              "count": 3
-            },
-            {
-              "type": "Walker",
-              "count": 2
+              "waveNumber": 1,
+              "spawnDelay": 0.5,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 3
+                },
+                {
+                  "type": "Runner",
+                  "count": 2
+                }
+              ]
             }
-          ]
-        }
 
-      ]
-    },
-    {
-      "levelId": 2,
-      "levelName": "Dark Forest",
-      "totalWaves": 4,
-      "waves": [
+
+          ]
+        },
         {
-          "waveNumber": 1,
-          "spawnDelay": 0.4,
-          "enemies": [
+          "levelId": "1-2",
+          "levelName": "Level 2",
+          "totalWaves": 4,
+          "waves": [
             {
-              "type": "Runner",
-              "count": 5
+              "waveNumber": 1,
+              "spawnDelay": 0.45,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 4
+                },
+                {
+                  "type": "Runner",
+                  "count": 3
+                }
+              ]
             },
             {
-              "type": "Walker",
-              "count": 3
+              "waveNumber": 2,
+              "spawnDelay": 0.4,
+              "enemies": [
+                {
+                  "type": "Runner",
+                  "count": 5
+                },
+                {
+                  "type": "Brute",
+                  "count": 1
+                }
+              ]
+            },
+            {
+              "waveNumber": 3,
+              "spawnDelay": 0.35,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 5
+                },
+                {
+                  "type": "Brute",
+                  "count": 2
+                }
+              ]
+            },
+            {
+              "waveNumber": 4,
+              "spawnDelay": 0.3,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 5
+                },
+                {
+                  "type": "Runner",
+                  "count": 4
+                },
+                {
+                  "type": "Brute",
+                  "count": 2
+                }
+              ]
             }
           ]
         },
         {
-          "waveNumber": 2,
-          "spawnDelay": 0.35,
-          "enemies": [
+          "levelId": "1-3",
+          "levelName": "Level 3",
+          "totalWaves": 5,
+          "waves": [
             {
-              "type": "Runner",
-              "count": 5
+              "waveNumber": 1,
+              "spawnDelay": 0.4,
+              "enemies": [
+                {
+                  "type": "Runner",
+                  "count": 5
+                },
+                {
+                  "type": "Walker",
+                  "count": 4
+                }
+              ]
             },
             {
-              "type": "Brute",
-              "count": 2
-            }
-          ]
-        },
-        {
-          "waveNumber": 3,
-          "spawnDelay": 0.35,
-          "enemies": [
-            {
-              "type": "Walker",
-              "count": 5
+              "waveNumber": 2,
+              "spawnDelay": 0.35,
+              "enemies": [
+                {
+                  "type": "Runner",
+                  "count": 6
+                },
+                {
+                  "type": "Brute",
+                  "count": 2
+                }
+              ]
             },
             {
-              "type": "Brute",
-              "count": 3
-            }
-          ]
-        },
-        {
-          "waveNumber": 4,
-          "spawnDelay": 0.3,
-          "enemies": [
-            {
-              "type": "Runner",
-              "count": 6
+              "waveNumber": 3,
+              "spawnDelay": 0.35,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 6
+                },
+                {
+                  "type": "Brute",
+                  "count": 3
+                }
+              ]
             },
             {
-              "type": "Walker",
-              "count": 4
+              "waveNumber": 4,
+              "spawnDelay": 0.3,
+              "enemies": [
+                {
+                  "type": "Runner",
+                  "count": 7
+                },
+                {
+                  "type": "Walker",
+                  "count": 5
+                },
+                {
+                  "type": "Brute",
+                  "count": 2
+                }
+              ]
             },
             {
-              "type": "Brute",
-              "count": 2
+              "waveNumber": 5,
+              "spawnDelay": 0.25,
+              "enemies": [
+                {
+                  "type": "Runner",
+                  "count": 7
+                },
+                {
+                  "type": "Walker",
+                  "count": 6
+                },
+                {
+                  "type": "Brute",
+                  "count": 4
+                }
+              ]
             }
           ]
         }
       ]
     },
     {
-      "levelId": 3,
-      "levelName": "Cursed City",
-      "totalWaves": 5,
-      "waves": [
+      "worldId": 2,
+      "worldName": "Dark Forest",
+      "levels": [
         {
-          "waveNumber": 1,
-          "spawnDelay": 0.35,
-          "enemies": [
+          "levelId": "2-1",
+          "levelName": "Level 1",
+          "totalWaves": 4,
+          "waves": [
             {
-              "type": "Runner",
-              "count": 6
+              "waveNumber": 1,
+              "spawnDelay": 0.4,
+              "enemies": [
+                {
+                  "type": "Runner",
+                  "count": 5
+                },
+                {
+                  "type": "Walker",
+                  "count": 4
+                }
+              ]
             },
             {
-              "type": "Walker",
-              "count": 4
+              "waveNumber": 2,
+              "spawnDelay": 0.35,
+              "enemies": [
+                {
+                  "type": "Runner",
+                  "count": 6
+                },
+                {
+                  "type": "Brute",
+                  "count": 2
+                }
+              ]
+            },
+            {
+              "waveNumber": 3,
+              "spawnDelay": 0.3,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 6
+                },
+                {
+                  "type": "Brute",
+                  "count": 3
+                }
+              ]
+            },
+            {
+              "waveNumber": 4,
+              "spawnDelay": 0.25,
+              "enemies": [
+                {
+                  "type": "Runner",
+                  "count": 7
+                },
+                {
+                  "type": "Walker",
+                  "count": 5
+                },
+                {
+                  "type": "Brute",
+                  "count": 3
+                }
+              ]
             }
           ]
         },
         {
-          "waveNumber": 2,
-          "spawnDelay": 0.3,
-          "enemies": [
+          "levelId": "2-2",
+          "levelName": "Level 2",
+          "totalWaves": 5,
+          "waves": [
             {
-              "type": "Runner",
-              "count": 7
+              "waveNumber": 1,
+              "spawnDelay": 0.35,
+              "enemies": [
+                {
+                  "type": "Runner",
+                  "count": 6
+                },
+                {
+                  "type": "Walker",
+                  "count": 5
+                }
+              ]
             },
             {
-              "type": "Brute",
-              "count": 3
+              "waveNumber": 2,
+              "spawnDelay": 0.3,
+              "enemies": [
+                {
+                  "type": "Runner",
+                  "count": 7
+                },
+                {
+                  "type": "Brute",
+                  "count": 3
+                }
+              ]
+            },
+            {
+              "waveNumber": 3,
+              "spawnDelay": 0.3,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 7
+                },
+                {
+                  "type": "Brute",
+                  "count": 4
+                }
+              ]
+            },
+            {
+              "waveNumber": 4,
+              "spawnDelay": 0.25,
+              "enemies": [
+                {
+                  "type": "Runner",
+                  "count": 8
+                },
+                {
+                  "type": "Walker",
+                  "count": 6
+                },
+                {
+                  "type": "Brute",
+                  "count": 3
+                }
+              ]
+            },
+            {
+              "waveNumber": 5,
+              "spawnDelay": 0.2,
+              "enemies": [
+                {
+                  "type": "Runner",
+                  "count": 8
+                },
+                {
+                  "type": "Walker",
+                  "count": 7
+                },
+                {
+                  "type": "Brute",
+                  "count": 5
+                }
+              ]
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "worldId": 3,
+      "worldName": "Cursed City",
+      "levels": [
         {
-          "waveNumber": 3,
-          "spawnDelay": 0.3,
-          "enemies": [
+          "levelId": "3-1",
+          "levelName": "Level 1",
+          "totalWaves": 5,
+          "waves": [
             {
-              "type": "Walker",
-              "count": 6
+              "waveNumber": 1,
+              "spawnDelay": 0.3,
+              "enemies": [
+                {
+                  "type": "Runner",
+                  "count": 7
+                },
+                {
+                  "type": "Walker",
+                  "count": 6
+                }
+              ]
             },
             {
-              "type": "Brute",
-              "count": 4
-            }
-          ]
-        },
-        {
-          "waveNumber": 4,
-          "spawnDelay": 0.25,
-          "enemies": [
-            {
-              "type": "Runner",
-              "count": 8
+              "waveNumber": 2,
+              "spawnDelay": 0.28,
+              "enemies": [
+                {
+                  "type": "Runner",
+                  "count": 8
+                },
+                {
+                  "type": "Brute",
+                  "count": 4
+                }
+              ]
             },
             {
-              "type": "Walker",
-              "count": 5
+              "waveNumber": 3,
+              "spawnDelay": 0.25,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 8
+                },
+                {
+                  "type": "Brute",
+                  "count": 5
+                }
+              ]
             },
             {
-              "type": "Brute",
-              "count": 3
-            }
-          ]
-        },
-        {
-          "waveNumber": 5,
-          "spawnDelay": 0.2,
-          "enemies": [
-            {
-              "type": "Runner",
-              "count": 8
+              "waveNumber": 4,
+              "spawnDelay": 0.22,
+              "enemies": [
+                {
+                  "type": "Runner",
+                  "count": 9
+                },
+                {
+                  "type": "Walker",
+                  "count": 7
+                },
+                {
+                  "type": "Brute",
+                  "count": 4
+                }
+              ]
             },
             {
-              "type": "Walker",
-              "count": 6
-            },
-            {
-              "type": "Brute",
-              "count": 5
+              "waveNumber": 5,
+              "spawnDelay": 0.2,
+              "enemies": [
+                {
+                  "type": "Runner",
+                  "count": 9
+                },
+                {
+                  "type": "Walker",
+                  "count": 8
+                },
+                {
+                  "type": "Brute",
+                  "count": 6
+                }
+              ]
             }
           ]
         }
