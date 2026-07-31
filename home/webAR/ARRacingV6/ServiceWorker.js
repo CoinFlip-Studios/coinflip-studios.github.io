@@ -1,4 +1,4 @@
-const cacheName = "DefaultCompany-ImagineARImage-0.1.0";
+const cacheName = "DefaultCompany-ARBasketball-0.1.0";
 const contentToCache = [
     "Build/ARRacingV6.loader.js",
     "Build/ARRacingV6.framework.js",

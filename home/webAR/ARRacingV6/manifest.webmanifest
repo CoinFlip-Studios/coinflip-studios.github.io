@@ -1,6 +1,6 @@
 {
-    "name": "ImagineARImage",
-    "short_name": "ImagineARImage",
+    "name": "ARBasketball",
+    "short_name": "ARBasketball",
     "start_url": "index.html",
     "display": "fullscreen",
     "background_color": "#231F20",
