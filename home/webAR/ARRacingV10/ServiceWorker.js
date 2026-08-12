@@ -1,9 +1,9 @@
 const cacheName = "DefaultCompany-ARBasketball-0.1.0";
 const contentToCache = [
-    "Build/ARRacingV9.loader.js",
-    "Build/ARRacingV9.framework.js",
-    "Build/ARRacingV9.data",
-    "Build/ARRacingV9.wasm",
+    "Build/ARRacingV10.loader.js",
+    "Build/ARRacingV10.framework.js",
+    "Build/ARRacingV10.data",
+    "Build/ARRacingV10.wasm",
     "TemplateData/style.css"
 
 ];
