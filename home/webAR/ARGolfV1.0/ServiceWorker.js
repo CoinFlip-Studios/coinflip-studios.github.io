@@ -1,9 +1,9 @@
 const cacheName = "DefaultCompany-ARBasketball-0.1.0";
 const contentToCache = [
-    "Build/ARGolf.loader.js",
-    "Build/ARGolf.framework.js",
-    "Build/ARGolf.data",
-    "Build/ARGolf.wasm",
+    "Build/ARGolfV1.0.loader.js",
+    "Build/ARGolfV1.0.framework.js",
+    "Build/ARGolfV1.0.data",
+    "Build/ARGolfV1.0.wasm",
     "TemplateData/style.css"
 
 ];
