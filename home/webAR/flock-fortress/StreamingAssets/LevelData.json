@@ -11,15 +11,11 @@
           "waves": [
             {
               "waveNumber": 1,
-              "spawnDelay": 0.5,
+              "spawnDelay": 1.2,
               "enemies": [
                 {
                   "type": "Walker",
-                  "count": 3
-                },
-                {
-                  "type": "Runner",
-                  "count": 2
+                  "count": 5
                 }
               ]
             }
