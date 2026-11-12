@@ -8,6 +8,8 @@
           "levelId": "1-1",
           "levelName": "Level 1",
           "totalWaves": 1,
+          "bossType": "None",
+          "enemyHealthMultiplier": 1.0,
           "waves": [
             {
               "waveNumber": 1,
@@ -19,72 +21,52 @@
                 }
               ]
             }
-
-
           ]
         },
         {
           "levelId": "1-2",
           "levelName": "Level 2",
           "totalWaves": 4,
+          "bossType": "None",
+          "enemyHealthMultiplier": 1.05,
           "waves": [
             {
               "waveNumber": 1,
-              "spawnDelay": 0.45,
+              "spawnDelay": 1.15,
               "enemies": [
                 {
                   "type": "Walker",
-                  "count": 4
-                },
-                {
-                  "type": "Runner",
                   "count": 3
                 }
               ]
             },
             {
               "waveNumber": 2,
-              "spawnDelay": 0.4,
+              "spawnDelay": 1.15,
               "enemies": [
                 {
-                  "type": "Runner",
-                  "count": 5
-                },
-                {
-                  "type": "Brute",
-                  "count": 1
+                  "type": "Walker",
+                  "count": 3
                 }
               ]
             },
             {
               "waveNumber": 3,
-              "spawnDelay": 0.35,
+              "spawnDelay": 1.15,
               "enemies": [
                 {
                   "type": "Walker",
-                  "count": 5
-                },
-                {
-                  "type": "Brute",
-                  "count": 2
+                  "count": 3
                 }
               ]
             },
             {
               "waveNumber": 4,
-              "spawnDelay": 0.3,
+              "spawnDelay": 1.15,
               "enemies": [
                 {
                   "type": "Walker",
-                  "count": 5
-                },
-                {
-                  "type": "Runner",
-                  "count": 4
-                },
-                {
-                  "type": "Brute",
-                  "count": 2
+                  "count": 3
                 }
               ]
             }
@@ -94,15 +76,13 @@
           "levelId": "1-3",
           "levelName": "Level 3",
           "totalWaves": 5,
+          "bossType": "None",
+          "enemyHealthMultiplier": 1.1,
           "waves": [
             {
               "waveNumber": 1,
-              "spawnDelay": 0.4,
+              "spawnDelay": 1.1,
               "enemies": [
-                {
-                  "type": "Runner",
-                  "count": 5
-                },
                 {
                   "type": "Walker",
                   "count": 4
@@ -111,64 +91,40 @@
             },
             {
               "waveNumber": 2,
-              "spawnDelay": 0.35,
+              "spawnDelay": 1.1,
               "enemies": [
                 {
-                  "type": "Runner",
-                  "count": 6
-                },
-                {
-                  "type": "Brute",
-                  "count": 2
+                  "type": "Walker",
+                  "count": 4
                 }
               ]
             },
             {
               "waveNumber": 3,
-              "spawnDelay": 0.35,
+              "spawnDelay": 1.1,
               "enemies": [
                 {
                   "type": "Walker",
-                  "count": 6
-                },
-                {
-                  "type": "Brute",
-                  "count": 3
+                  "count": 4
                 }
               ]
             },
             {
               "waveNumber": 4,
-              "spawnDelay": 0.3,
+              "spawnDelay": 1.1,
               "enemies": [
                 {
-                  "type": "Runner",
-                  "count": 7
-                },
-                {
                   "type": "Walker",
-                  "count": 5
-                },
-                {
-                  "type": "Brute",
-                  "count": 2
+                  "count": 4
                 }
               ]
             },
             {
               "waveNumber": 5,
-              "spawnDelay": 0.25,
+              "spawnDelay": 1.1,
               "enemies": [
                 {
-                  "type": "Runner",
-                  "count": 7
-                },
-                {
                   "type": "Walker",
-                  "count": 6
-                },
-                {
-                  "type": "Brute",
                   "count": 4
                 }
               ]
@@ -185,64 +141,50 @@
           "levelId": "2-1",
           "levelName": "Level 1",
           "totalWaves": 4,
+          "bossType": "None",
+          "enemyHealthMultiplier": 1.15,
           "waves": [
             {
               "waveNumber": 1,
-              "spawnDelay": 0.4,
+              "spawnDelay": 0.95,
               "enemies": [
                 {
-                  "type": "Runner",
-                  "count": 5
-                },
-                {
                   "type": "Walker",
-                  "count": 4
+                  "count": 6
                 }
               ]
             },
             {
               "waveNumber": 2,
-              "spawnDelay": 0.35,
+              "spawnDelay": 0.95,
               "enemies": [
                 {
-                  "type": "Runner",
-                  "count": 6
-                },
-                {
-                  "type": "Brute",
-                  "count": 2
+                  "type": "Walker",
+                  "count": 7
                 }
               ]
             },
             {
               "waveNumber": 3,
-              "spawnDelay": 0.3,
+              "spawnDelay": 0.95,
               "enemies": [
                 {
                   "type": "Walker",
                   "count": 6
-                },
-                {
-                  "type": "Brute",
-                  "count": 3
                 }
               ]
             },
             {
               "waveNumber": 4,
-              "spawnDelay": 0.25,
+              "spawnDelay": 0.95,
               "enemies": [
                 {
-                  "type": "Runner",
+                  "type": "Walker",
                   "count": 7
                 },
                 {
-                  "type": "Walker",
-                  "count": 5
-                },
-                {
                   "type": "Brute",
-                  "count": 3
+                  "count": 1
                 }
               ]
             }
@@ -251,87 +193,189 @@
         {
           "levelId": "2-2",
           "levelName": "Level 2",
-          "totalWaves": 5,
+          "totalWaves": 4,
+          "bossType": "None",
+          "enemyHealthMultiplier": 1.2,
           "waves": [
             {
               "waveNumber": 1,
-              "spawnDelay": 0.35,
+              "spawnDelay": 0.9,
               "enemies": [
                 {
-                  "type": "Runner",
-                  "count": 6
-                },
-                {
                   "type": "Walker",
-                  "count": 5
+                  "count": 8
                 }
               ]
             },
             {
               "waveNumber": 2,
-              "spawnDelay": 0.3,
+              "spawnDelay": 0.9,
               "enemies": [
                 {
-                  "type": "Runner",
-                  "count": 7
+                  "type": "Walker",
+                  "count": 8
                 },
                 {
                   "type": "Brute",
-                  "count": 3
+                  "count": 1
                 }
               ]
             },
             {
               "waveNumber": 3,
-              "spawnDelay": 0.3,
+              "spawnDelay": 0.9,
               "enemies": [
                 {
                   "type": "Walker",
-                  "count": 7
-                },
-                {
-                  "type": "Brute",
-                  "count": 4
+                  "count": 8
                 }
               ]
             },
             {
               "waveNumber": 4,
-              "spawnDelay": 0.25,
+              "spawnDelay": 0.9,
               "enemies": [
                 {
-                  "type": "Runner",
+                  "type": "Walker",
                   "count": 8
                 },
                 {
-                  "type": "Walker",
-                  "count": 6
-                },
-                {
                   "type": "Brute",
-                  "count": 3
-                }
-              ]
-            },
-            {
-              "waveNumber": 5,
-              "spawnDelay": 0.2,
-              "enemies": [
-                {
-                  "type": "Runner",
-                  "count": 8
-                },
-                {
-                  "type": "Walker",
-                  "count": 7
-                },
-                {
-                  "type": "Brute",
-                  "count": 5
+                  "count": 1
                 }
               ]
             }
           ]
+        },
+        {
+          "levelId": "2-3",
+          "levelName": "Level 3",
+          "totalWaves": 4,
+          "bossType": "None",
+          "enemyHealthMultiplier": 1.25,
+          "waves": [
+            {
+              "waveNumber": 1,
+              "spawnDelay": 0.85,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 9
+                }
+              ]
+            },
+            {
+              "waveNumber": 2,
+              "spawnDelay": 0.85,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 10
+                },
+                {
+                  "type": "Brute",
+                  "count": 1
+                }
+              ]
+            },
+            {
+              "waveNumber": 3,
+              "spawnDelay": 0.85,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 9
+                },
+                {
+                  "type": "Brute",
+                  "count": 1
+                }
+              ]
+            },
+            {
+              "waveNumber": 4,
+              "spawnDelay": 0.85,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 10
+                },
+                {
+                  "type": "Brute",
+                  "count": 1
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "levelId": "2-4",
+          "levelName": "Mini Boss",
+          "totalWaves": 4,
+          "bossType": "MiniBoss",
+          "enemyHealthMultiplier": 1.3,
+          "waves": [
+            {
+              "waveNumber": 1,
+              "spawnDelay": 0.8,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 11
+                },
+                {
+                  "type": "Brute",
+                  "count": 1
+                }
+              ]
+            },
+            {
+              "waveNumber": 2,
+              "spawnDelay": 0.8,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 11
+                },
+                {
+                  "type": "Brute",
+                  "count": 1
+                }
+              ]
+            },
+            {
+              "waveNumber": 3,
+              "spawnDelay": 0.8,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 11
+                },
+                {
+                  "type": "Brute",
+                  "count": 1
+                }
+              ]
+            },
+            {
+              "waveNumber": 4,
+              "spawnDelay": 0.8,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 11
+                },
+                {
+                  "type": "Brute",
+                  "count": 1
+                }
+              ]
+            }
+          ],
+          "bossHP": 80,
+          "bossDamage": 10,
+          "bossScore": 800,
+          "bossSpeed": 0.15
         }
       ]
     },
@@ -343,28 +387,528 @@
           "levelId": "3-1",
           "levelName": "Level 1",
           "totalWaves": 5,
+          "bossType": "None",
+          "enemyHealthMultiplier": 1.35,
           "waves": [
             {
               "waveNumber": 1,
-              "spawnDelay": 0.3,
+              "spawnDelay": 0.75,
               "enemies": [
                 {
-                  "type": "Runner",
-                  "count": 7
+                  "type": "Walker",
+                  "count": 10
                 },
                 {
-                  "type": "Walker",
-                  "count": 6
+                  "type": "Brute",
+                  "count": 1
                 }
               ]
             },
             {
               "waveNumber": 2,
-              "spawnDelay": 0.28,
+              "spawnDelay": 0.75,
               "enemies": [
                 {
-                  "type": "Runner",
-                  "count": 8
+                  "type": "Walker",
+                  "count": 10
+                },
+                {
+                  "type": "Brute",
+                  "count": 1
+                }
+              ]
+            },
+            {
+              "waveNumber": 3,
+              "spawnDelay": 0.75,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 10
+                },
+                {
+                  "type": "Brute",
+                  "count": 1
+                }
+              ]
+            },
+            {
+              "waveNumber": 4,
+              "spawnDelay": 0.75,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 10
+                },
+                {
+                  "type": "Brute",
+                  "count": 1
+                }
+              ]
+            },
+            {
+              "waveNumber": 5,
+              "spawnDelay": 0.75,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 10
+                },
+                {
+                  "type": "Brute",
+                  "count": 2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "levelId": "3-2",
+          "levelName": "Level 2",
+          "totalWaves": 5,
+          "bossType": "None",
+          "enemyHealthMultiplier": 1.4,
+          "waves": [
+            {
+              "waveNumber": 1,
+              "spawnDelay": 0.7,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 11
+                },
+                {
+                  "type": "Brute",
+                  "count": 1
+                }
+              ]
+            },
+            {
+              "waveNumber": 2,
+              "spawnDelay": 0.7,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 11
+                },
+                {
+                  "type": "Brute",
+                  "count": 2
+                }
+              ]
+            },
+            {
+              "waveNumber": 3,
+              "spawnDelay": 0.7,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 11
+                },
+                {
+                  "type": "Brute",
+                  "count": 1
+                }
+              ]
+            },
+            {
+              "waveNumber": 4,
+              "spawnDelay": 0.7,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 11
+                },
+                {
+                  "type": "Brute",
+                  "count": 2
+                }
+              ]
+            },
+            {
+              "waveNumber": 5,
+              "spawnDelay": 0.7,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 12
+                },
+                {
+                  "type": "Brute",
+                  "count": 2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "levelId": "3-3",
+          "levelName": "Mini Boss",
+          "totalWaves": 5,
+          "bossType": "MiniBoss",
+          "enemyHealthMultiplier": 1.45,
+          "waves": [
+            {
+              "waveNumber": 1,
+              "spawnDelay": 0.65,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 12
+                },
+                {
+                  "type": "Brute",
+                  "count": 2
+                }
+              ]
+            },
+            {
+              "waveNumber": 2,
+              "spawnDelay": 0.65,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 12
+                },
+                {
+                  "type": "Brute",
+                  "count": 2
+                }
+              ]
+            },
+            {
+              "waveNumber": 3,
+              "spawnDelay": 0.65,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 13
+                },
+                {
+                  "type": "Brute",
+                  "count": 2
+                }
+              ]
+            },
+            {
+              "waveNumber": 4,
+              "spawnDelay": 0.65,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 12
+                },
+                {
+                  "type": "Brute",
+                  "count": 2
+                }
+              ]
+            },
+            {
+              "waveNumber": 5,
+              "spawnDelay": 0.65,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 13
+                },
+                {
+                  "type": "Brute",
+                  "count": 2
+                }
+              ]
+            }
+          ],
+          "bossHP": 140,
+          "bossDamage": 15,
+          "bossScore": 1400,
+          "bossSpeed": 0.18
+        },
+        {
+          "levelId": "3-4",
+          "levelName": "Level 4",
+          "totalWaves": 5,
+          "bossType": "None",
+          "enemyHealthMultiplier": 1.5,
+          "waves": [
+            {
+              "waveNumber": 1,
+              "spawnDelay": 0.6,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 15
+                },
+                {
+                  "type": "Brute",
+                  "count": 2
+                }
+              ]
+            },
+            {
+              "waveNumber": 2,
+              "spawnDelay": 0.6,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 16
+                },
+                {
+                  "type": "Brute",
+                  "count": 3
+                }
+              ]
+            },
+            {
+              "waveNumber": 3,
+              "spawnDelay": 0.6,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 15
+                },
+                {
+                  "type": "Brute",
+                  "count": 2
+                }
+              ]
+            },
+            {
+              "waveNumber": 4,
+              "spawnDelay": 0.6,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 16
+                },
+                {
+                  "type": "Brute",
+                  "count": 3
+                }
+              ]
+            },
+            {
+              "waveNumber": 5,
+              "spawnDelay": 0.6,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 16
+                },
+                {
+                  "type": "Brute",
+                  "count": 3
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "levelId": "3-5",
+          "levelName": "Level 5",
+          "totalWaves": 5,
+          "bossType": "None",
+          "enemyHealthMultiplier": 1.55,
+          "waves": [
+            {
+              "waveNumber": 1,
+              "spawnDelay": 0.55,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 17
+                },
+                {
+                  "type": "Brute",
+                  "count": 3
+                }
+              ]
+            },
+            {
+              "waveNumber": 2,
+              "spawnDelay": 0.55,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 18
+                },
+                {
+                  "type": "Brute",
+                  "count": 3
+                }
+              ]
+            },
+            {
+              "waveNumber": 3,
+              "spawnDelay": 0.55,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 17
+                },
+                {
+                  "type": "Brute",
+                  "count": 3
+                }
+              ]
+            },
+            {
+              "waveNumber": 4,
+              "spawnDelay": 0.55,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 18
+                },
+                {
+                  "type": "Brute",
+                  "count": 3
+                }
+              ]
+            },
+            {
+              "waveNumber": 5,
+              "spawnDelay": 0.55,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 18
+                },
+                {
+                  "type": "Brute",
+                  "count": 4
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "worldId": 4,
+      "worldName": "Alien Citadel",
+      "levels": [
+        {
+          "levelId": "4-1",
+          "levelName": "Level 1",
+          "totalWaves": 6,
+          "bossType": "None",
+          "enemyHealthMultiplier": 1.6,
+          "waves": [
+            {
+              "waveNumber": 1,
+              "spawnDelay": 0.5,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 16
+                },
+                {
+                  "type": "Brute",
+                  "count": 3
+                }
+              ]
+            },
+            {
+              "waveNumber": 2,
+              "spawnDelay": 0.5,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 16
+                },
+                {
+                  "type": "Brute",
+                  "count": 3
+                }
+              ]
+            },
+            {
+              "waveNumber": 3,
+              "spawnDelay": 0.5,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 17
+                },
+                {
+                  "type": "Brute",
+                  "count": 3
+                }
+              ]
+            },
+            {
+              "waveNumber": 4,
+              "spawnDelay": 0.5,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 16
+                },
+                {
+                  "type": "Brute",
+                  "count": 3
+                }
+              ]
+            },
+            {
+              "waveNumber": 5,
+              "spawnDelay": 0.5,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 16
+                },
+                {
+                  "type": "Brute",
+                  "count": 3
+                }
+              ]
+            },
+            {
+              "waveNumber": 6,
+              "spawnDelay": 0.5,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 17
+                },
+                {
+                  "type": "Brute",
+                  "count": 4
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "levelId": "4-2",
+          "levelName": "Final Boss",
+          "totalWaves": 6,
+          "bossType": "FinalBoss",
+          "enemyHealthMultiplier": 1.65,
+          "waves": [
+            {
+              "waveNumber": 1,
+              "spawnDelay": 0.45,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 18
+                },
+                {
+                  "type": "Brute",
+                  "count": 3
+                }
+              ]
+            },
+            {
+              "waveNumber": 2,
+              "spawnDelay": 0.45,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 18
                 },
                 {
                   "type": "Brute",
@@ -374,29 +918,11 @@
             },
             {
               "waveNumber": 3,
-              "spawnDelay": 0.25,
+              "spawnDelay": 0.45,
               "enemies": [
                 {
                   "type": "Walker",
-                  "count": 8
-                },
-                {
-                  "type": "Brute",
-                  "count": 5
-                }
-              ]
-            },
-            {
-              "waveNumber": 4,
-              "spawnDelay": 0.22,
-              "enemies": [
-                {
-                  "type": "Runner",
-                  "count": 9
-                },
-                {
-                  "type": "Walker",
-                  "count": 7
+                  "count": 18
                 },
                 {
                   "type": "Brute",
@@ -405,24 +931,52 @@
               ]
             },
             {
-              "waveNumber": 5,
-              "spawnDelay": 0.2,
+              "waveNumber": 4,
+              "spawnDelay": 0.45,
               "enemies": [
                 {
-                  "type": "Runner",
-                  "count": 9
-                },
-                {
                   "type": "Walker",
-                  "count": 8
+                  "count": 18
                 },
                 {
                   "type": "Brute",
-                  "count": 6
+                  "count": 3
+                }
+              ]
+            },
+            {
+              "waveNumber": 5,
+              "spawnDelay": 0.45,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 18
+                },
+                {
+                  "type": "Brute",
+                  "count": 4
+                }
+              ]
+            },
+            {
+              "waveNumber": 6,
+              "spawnDelay": 0.45,
+              "enemies": [
+                {
+                  "type": "Walker",
+                  "count": 18
+                },
+                {
+                  "type": "Brute",
+                  "count": 4
                 }
               ]
             }
-          ]
+          ],
+          "bossHP": 260,
+          "bossDamage": 25,
+          "bossScore": 2600,
+          "bossSpeed": 0.2
         }
       ]
     }
